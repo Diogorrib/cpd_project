@@ -1,0 +1,70 @@
+# Build artifacts
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.dylib
+*.lo
+*.la
+*.exe
+*.app
+*.elf
+parsim
+
+# Debugging
+*.d
+*.gcda
+*.gcno
+*.gcov
+*.pdb
+*.ilk
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Autotools
+configure
+config.log
+config.status
+autom4te.cache/
+compile
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+m4/
+
+# IDEs
+.vscode/
+.idea/
+.settings/
+.cproject
+.project
+*.xcworkspace
+xcuserdata/
+.vs/
+*.sln
+*.vcxproj*
+*.filters
+*.user
+ipch/
+cmake-build-*/
+
+# Misc
+Debug/
+Release/
+x64/
+x86/
+build/
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+\#*#
