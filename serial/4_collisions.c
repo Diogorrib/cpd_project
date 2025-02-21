@@ -10,9 +10,11 @@ long check_collisions_for_part(long long cell_idx, long long j, particle_t *par,
         double dy = par[p1_idx].y - par[p2_idx].y;
         double dist_sq = dx * dx + dy * dy;
         if (dist_sq <= EPSILON2) {
+            if (par[p1_idx].m != 0 && par[p2_idx].m != 0) {
+                collisions++;
+            }
             par[p1_idx].m = 0;
             par[p2_idx].m = 0;
-            collisions++;
         }
     }
     return collisions;
@@ -33,10 +35,7 @@ long check_collisions(long ncside, particle_t *par, cell_t *cells)
     long long n_cells = ncside * ncside;
     for (long long i = 0; i < n_cells; i++) {
         for (long long j = 0; j < cells[i].n_part; j++) {
-            long long p_idx = cells[i].part_idx[j];
-            if (par[p_idx].m != 0) {
-                collisions += check_collisions_for_part(i, j, par, cells);
-            }
+            collisions += check_collisions_for_part(i, j, par, cells);
         }
     }
     return collisions;

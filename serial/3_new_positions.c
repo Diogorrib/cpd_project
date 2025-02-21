@@ -64,10 +64,10 @@ void compute_new_positions(double side, long ncside, long long n_part, particle_
         if (par[i].m == 0) {
             continue;
         }
-        par[i].vx += par[i].ax * DELTAT;
-        par[i].vy += par[i].ay * DELTAT;
         par[i].x += par[i].vx * DELTAT + 0.5 * par[i].ax * DELTAT * DELTAT;
         par[i].y += par[i].vy * DELTAT + 0.5 * par[i].ay * DELTAT * DELTAT;
+        par[i].vx += par[i].ax * DELTAT;
+        par[i].vy += par[i].ay * DELTAT;
         check_outside_space(side, i, par);
     }
     cleanup_cells(ncside, cells);
