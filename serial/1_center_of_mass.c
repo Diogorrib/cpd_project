@@ -13,25 +13,28 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
     long long n_cells = ncside * ncside;
 
     for (long long i = 0; i < n_cells; i++) {
-        cells[i].x = 0;
-        cells[i].y = 0;
-        cells[i].m = 0;
+        cell_t *cell = &cells[i];
+        cell->x = 0;
+        cell->y = 0;
+        cell->m = 0;
     }
 
     for (long long i = 0; i < n_part; i++) {
-        if (par[i].m == 0) {
-            continue;
-        }
-        long long cell_idx = par[i].cell_idx;
-        cells[cell_idx].m += par[i].m;
-        cells[cell_idx].x += par[i].m * par[i].x;
-        cells[cell_idx].y += par[i].m * par[i].y;
+        particle_t *p = &par[i];
+        if (p->m == 0) continue;
+
+        cell_t *cell = &cells[p->cell_idx];
+        cell->m += p->m;
+        cell->x += p->m * p->x;
+        cell->y += p->m * p->y;
     }
 
     for (long long i = 0; i < n_cells; i++) {
-        if (cells[i].m != 0) {
-            cells[i].x /= cells[i].m;
-            cells[i].y /= cells[i].m;
+        cell_t *cell = &cells[i];
+        if (cell->m != 0) {
+            double inv_mass = 1.0 / cell->m;
+            cell->x *= inv_mass;
+            cell->y *= inv_mass;
         }
     }
 }

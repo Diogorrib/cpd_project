@@ -12,7 +12,7 @@
  */
 void particle_distribution(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
-    double cell_side = side / ncside;
+    double inv_cell_side = ncside / side;
     long long n_cells = ncside * ncside;
 
     // init / reset cells
@@ -21,30 +21,29 @@ void particle_distribution(double side, long ncside, long long n_part, particle_
     }
 
     for (long long i = 0; i < n_part; i++) {
-        if (par[i].m == 0) {
-            continue;
-        }
+        particle_t *p = &par[i];
+        if (p->m == 0) continue;
 
-        long cell_x_idx = (long)(par[i].x / cell_side);
-        long cell_y_idx = (long)(par[i].y / cell_side);
+        long cell_x_idx = (long)(p->x * inv_cell_side);
+        long cell_y_idx = (long)(p->y * inv_cell_side);
         long long cell_idx = cell_x_idx + cell_y_idx * ncside;
 
         append_particle_index(i, cell_idx, par, cells);
     }
 }
 
-void check_outside_space(double side, long long p_idx, particle_t *par)
+void check_outside_space(double side, particle_t *p)
 {
-    if (par[p_idx].x < 0) {
-        par[p_idx].x += side;
-    } else if (par[p_idx].x >= side) {
-        par[p_idx].x -= side;
+    if (p->x < 0) {
+        p->x += side;
+    } else if (p->x >= side) {
+        p->x -= side;
     }
 
-    if (par[p_idx].y < 0) {
-        par[p_idx].y += side;
-    } else if (par[p_idx].y >= side) {
-        par[p_idx].y -= side;
+    if (p->y < 0) {
+        p->y += side;
+    } else if (p->y >= side) {
+        p->y -= side;
     }
 }
 
@@ -61,14 +60,14 @@ void check_outside_space(double side, long long p_idx, particle_t *par)
 void compute_new_positions(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
     for (long long i = 0; i < n_part; i++) {
-        if (par[i].m == 0) {
-            continue;
-        }
-        par[i].x += par[i].vx * DELTAT + 0.5 * par[i].ax * DELTAT * DELTAT;
-        par[i].y += par[i].vy * DELTAT + 0.5 * par[i].ay * DELTAT * DELTAT;
-        par[i].vx += par[i].ax * DELTAT;
-        par[i].vy += par[i].ay * DELTAT;
-        check_outside_space(side, i, par);
+        particle_t *p = &par[i];
+        if (p->m == 0) continue;
+
+        p->x += p->vx * DELTAT + 0.5 * p->ax * DELTAT * DELTAT;
+        p->y += p->vy * DELTAT + 0.5 * p->ay * DELTAT * DELTAT;
+        p->vx += p->ax * DELTAT;
+        p->vy += p->ay * DELTAT;
+        check_outside_space(side, p);
     }
     cleanup_cells(ncside, cells);
     particle_distribution(side, ncside, n_part, par, cells);

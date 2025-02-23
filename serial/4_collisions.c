@@ -1,20 +1,20 @@
 #include "simulation.h"
 
-long check_collisions_for_part(long long cell_idx, long long j, particle_t *par, cell_t *cells)
+long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
 {
     long collisions = 0;
-    long long p1_idx = cells[cell_idx].part_idx[j];
-    for (long long i = j + 1; i < cells[cell_idx].n_part; i++) {
-        long long p2_idx = cells[cell_idx].part_idx[i];
-        double dx = par[p1_idx].x - par[p2_idx].x;
-        double dy = par[p1_idx].y - par[p2_idx].y;
+    particle_t *p1 = &par[cell->part_idx[j]];
+    for (long long i = j + 1; i < cell->n_part; i++) {
+        particle_t *p2 = &par[cell->part_idx[i]];
+        double dx = p1->x - p2->x;
+        double dy = p1->y - p2->y;
         double dist_sq = dx * dx + dy * dy;
         if (dist_sq <= EPSILON2) {
-            if (par[p1_idx].m != 0 && par[p2_idx].m != 0) {
+            if (p1->m != 0 && p2->m != 0) {
                 collisions++;
             }
-            par[p1_idx].m = 0;
-            par[p2_idx].m = 0;
+            p1->m = 0;
+            p2->m = 0;
         }
     }
     return collisions;
@@ -34,8 +34,9 @@ long check_collisions(long ncside, particle_t *par, cell_t *cells)
     long collisions = 0;
     long long n_cells = ncside * ncside;
     for (long long i = 0; i < n_cells; i++) {
-        for (long long j = 0; j < cells[i].n_part; j++) {
-            collisions += check_collisions_for_part(i, j, par, cells);
+        cell_t *cell = &cells[i];
+        for (long long j = 0; j < cell->n_part; j++) {
+            collisions += check_collisions_for_part(cell, j, par);
         }
     }
     return collisions;
