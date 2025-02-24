@@ -1,8 +1,9 @@
-CC = gcc
-CFLAGS = -O2 -fopenmp -Wall -Wextra -Werror
+CXX = g++
+CXXFLAGS = -O2 -fopenmp -Wall -Wextra -Werror
 LDFLAGS = -lm
-SRCS = $(wildcard *.c)
-OBJS = $(SRCS:.c=.o)
+
+SRCS = $(wildcard *.cpp)  # Change *.c to *.cpp if your code is in C++
+OBJS = $(SRCS:.cpp=.o)
 DEPS = $(wildcard *.h)
 
 TARGET = parsim
@@ -10,10 +11,10 @@ TARGET = parsim
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
-%.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.cpp $(DEPS)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)
