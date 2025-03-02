@@ -15,6 +15,7 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atol(argv[5]);
 }
+
 long simulation_step(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
     compute_center_of_mass(ncside, n_part, par, cells);
@@ -22,6 +23,7 @@ long simulation_step(double side, long ncside, long long n_part, particle_t *par
     compute_new_positions(side, ncside, n_part, par, cells);
     return check_collisions(ncside, par, cells);
 }
+
 void print_result(particle_t *par, long long collisions)
 {
     fprintf(stdout, "%.3f %.3f\n", par[0].x, par[0].y);
@@ -39,6 +41,12 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 
+    // Set number of threads environment variable
+    if (setenv("OMP_NUM_THREADS", "10", 1) != 0) {
+        perror("setenv");
+        exit(EXIT_FAILURE);
+    }
+
     particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
     cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
     init_particles(seed, side, ncside, n_part, par);
@@ -47,6 +55,7 @@ int main(int argc, char *argv[])
     exec_time = -omp_get_wtime();
 
     particle_distribution(side, ncside, n_part, par, cells);
+
     for (long long t = 0; t < time_steps; t++) {
         collisions += simulation_step(side, ncside, n_part, par, cells);
     }
@@ -58,4 +67,6 @@ int main(int argc, char *argv[])
     cleanup_cells(ncside, cells);
     free(cells);
     free(par);
+
+    return 0;
 }

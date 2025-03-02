@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include <omp.h>
 
 /**
  * @brief Compute the center of mass for each cell
@@ -12,6 +13,8 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
 {
     long long n_cells = ncside * ncside;
 
+    // Initialize cells in parallel
+    #pragma omp parallel for
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         cell->x = 0;
@@ -19,16 +22,24 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
         cell->m = 0;
     }
 
+    // Accumulate mass and positions in parallel
+    #pragma omp parallel for
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
-        cell_t *cell = &cells[p->cell_idx];
-        cell->m += p->m;
-        cell->x += p->m * p->x;
-        cell->y += p->m * p->y;
+        #pragma omp atomic
+        cells[p->cell_idx].m += p->m;
+        
+        #pragma omp atomic
+        cells[p->cell_idx].x += p->m * p->x;
+        
+        #pragma omp atomic
+        cells[p->cell_idx].y += p->m * p->y;
     }
 
+    // Compute the center of mass in parallel
+    #pragma omp parallel for
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         if (cell->m != 0) {

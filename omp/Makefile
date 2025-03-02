@@ -1,4 +1,4 @@
-CC = gcc-14
+CC = gcc
 CFLAGS = -O2 -fopenmp -Wall -Wextra -Werror
 LDFLAGS = -lm
 SRCS = $(wildcard *.c)
