@@ -1,26 +1,26 @@
-[PASS] ../samples/assignment_01.in
+[PASS] samples/assignment_01.in
 0.0s
-[PASS] ../samples/assignment_02.in
+[PASS] samples/assignment_02.in
 0.0s
-[PASS] ../samples/assignment_03.in
+[PASS] samples/assignment_03.in
 0.0s
-[PASS] ../samples/assignment_04.in
+[PASS] samples/assignment_04.in
 1.0s
-[PASS] ../samples/debug_info_01.in
+[PASS] samples/debug_info_01.in
 0.0s
-[PASS] ../samples/fenix_01.in
+[PASS] samples/fenix_01.in
 1.3s
-[PASS] ../samples/fenix_02.in
+[PASS] samples/fenix_02.in
 29.6s
-[PASS] ../samples/fenix_03.in
+[PASS] samples/fenix_03.in
 55.4s
-[PASS] ../samples/fenix_04.in
+[PASS] samples/fenix_04.in
 200.8s
-[PASS] ../samples/fenix_05.in
+[PASS] samples/fenix_05.in
 241.9s
-[PASS] ../samples/fenix_06.in
+[PASS] samples/fenix_06.in
 405.6s
-[PASS] ../samples/fenix_07.in
+[PASS] samples/fenix_07.in
 66.8s
 Tests Passed: 12
 Tests Failed: 0

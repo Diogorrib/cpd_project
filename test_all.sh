@@ -23,9 +23,9 @@ for input_file in "$TEST_DIR"/*.in; do
 
     # Increment counters based on the result
     if [ $result -eq 0 ]; then
-        PASSED=$((passed + 1))
+        ((PASSED++))
     else
-        FAILED=$((failed + 1))
+        ((FAILED++))
     fi
 done
 
