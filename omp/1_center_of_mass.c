@@ -28,14 +28,16 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
+        cell_t *cell = &cells[p->cell_idx];
+
         #pragma omp atomic
-        cells[p->cell_idx].m += p->m;
-        
+        cell->m += p->m;
+
         #pragma omp atomic
-        cells[p->cell_idx].x += p->m * p->x;
-        
+        cell->x += p->m * p->x;
+
         #pragma omp atomic
-        cells[p->cell_idx].y += p->m * p->y;
+        cell->y += p->m * p->y;
     }
 
     // Compute the center of mass in parallel

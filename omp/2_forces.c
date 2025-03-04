@@ -102,12 +102,14 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
 void compute_forces(double side, long ncside, particle_t *par, cell_t *cells)
 {
     long long n_cells = ncside * ncside;
+    #pragma omp parallel for
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         if (cell->n_part == 0) continue;
 
         center_of_mass_t adj_cells[ADJ_CELLS];
         get_adj_indexes(side, ncside, i, cells, adj_cells);
+        #pragma omp parallel for
         for (long long j = 0; j < cell->n_part; j++) {
             long long p_idx = cell->part_idx[j];
             particle_t *p = &par[p_idx];

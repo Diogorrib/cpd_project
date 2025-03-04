@@ -42,10 +42,10 @@ int main(int argc, char *argv[])
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 
     // Set number of threads environment variable
-    if (setenv("OMP_NUM_THREADS", "10", 1) != 0) {
+    /* if (setenv("OMP_NUM_THREADS", "10", 1) != 0) {
         perror("setenv");
         exit(EXIT_FAILURE);
-    }
+    } */
 
     particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
     cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));

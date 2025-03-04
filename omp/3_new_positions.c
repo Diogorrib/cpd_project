@@ -16,10 +16,14 @@ void particle_distribution(double side, long ncside, long long n_part, particle_
     long long n_cells = ncside * ncside;
 
     // init / reset cells
+    #pragma omp parallel for
     for (long long i = 0; i < n_cells; i++) {
-        cells[i].n_part = 0;
+        cell_t *cell = &cells[i];
+        cell->n_part = 0;
+        omp_init_lock(&(cell->cell_lock));
     }
 
+    #pragma omp parallel for
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
@@ -59,6 +63,7 @@ void check_outside_space(double side, particle_t *p)
  */
 void compute_new_positions(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
+    #pragma omp parallel for
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;

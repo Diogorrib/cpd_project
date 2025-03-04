@@ -1,6 +1,8 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include <omp.h>
+
 typedef struct {
     double x, y, vx, vy, m;
     double ax, ay;
@@ -11,6 +13,7 @@ typedef struct {
     double x, y, m;
     long long n_part;
     long long *part_idx;
+    omp_lock_t cell_lock;
 } cell_t;
 
 typedef struct {
