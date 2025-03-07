@@ -43,6 +43,13 @@ int main(int argc, char *argv[])
     cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
     init_particles(seed, side, ncside, n_part, par);
 
+    // complete the initialization of the cells (here so the base file can be used)
+    for (long long i = 0; i < n_part; i++) {
+        particle_t *p = &par[i];
+        p->fx = 0;
+        p->fy = 0;
+    }
+
     double exec_time;
     exec_time = -omp_get_wtime();
 
