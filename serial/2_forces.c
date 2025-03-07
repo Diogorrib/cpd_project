@@ -38,7 +38,30 @@ void get_adj_indexes(double side, long ncside, long long cell_idx, cell_t *cells
     }
 }
 
-void compute_force(double x1, double y1, double m1, double x2, double y2, double m2, double *fx, double *fy)
+void compute_force(double x1, double y1, double m1, particle_t *p2, double *fx, double *fy)
+{   
+    double x2 = p2->x;
+    double y2 = p2->y;
+    double m2 = p2->m;
+
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    double dist_sq = dx * dx + dy * dy;
+    double f = G * m1 * m2 / dist_sq;
+
+    double inv_dist = 1.0 / sqrt(dist_sq);
+    double vecx = dx * inv_dist;
+    double vecy = dy * inv_dist;
+
+    *fx += f * vecx;
+    *fy += f * vecy;
+
+    double inv_mass = 1.0 / m2;
+    p2->ax -= (f * vecx) * inv_mass;
+    p2->ay -= (f * vecy) * inv_mass;
+}
+
+void compute_force_cell(double x1, double y1, double m1, double x2, double y2, double m2, double *fx, double *fy)
 {
     double dx = x2 - x1;
     double dy = y2 - y1;
@@ -59,7 +82,7 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
     double fy = 0;
 
     // particles in the same cell
-    for (long long i = 0; i < cell->n_part; i++) {
+    for (long long i = p1_idx; i < cell->n_part; i++) {
         long long p2_idx = cell->part_idx[i];
         if (p2_idx == p1_idx) continue;
 
@@ -67,7 +90,7 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
         if (p2->m != 0) {
             compute_force(
                 p1->x, p1->y, p1->m,
-                p2->x, p2->y, p2->m,
+                p2,
                 &fx, &fy
             );
         }
@@ -77,7 +100,7 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
     for (int i = 0; i < ADJ_CELLS; i++) {
         center_of_mass_t *adj_cell = &adj_cells[i];
         if (adj_cell->m != 0) {
-            compute_force(
+            compute_force_cell(
                 p1->x, p1->y, p1->m,
                 adj_cell->x, adj_cell->y, adj_cell->m,
                 &fx, &fy
@@ -86,8 +109,8 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
     }
 
     double inv_mass = 1.0 / p1->m;
-    p1->ax = fx * inv_mass;
-    p1->ay = fy * inv_mass;
+    p1->ax += fx * inv_mass;
+    p1->ay += fy * inv_mass;
 }
 
 /**
