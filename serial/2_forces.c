@@ -56,7 +56,7 @@ void compute_force(double x1, double y1, double m1, double x2, double y2, double
  * @brief Compute the force between two particles,
  * accumulating the force in both particles (avoid duplicate calculations)
  */
-void compute_force_cell_cell(particle_t *p1, particle_t *p2)
+void compute_force_particle_particle(particle_t *p1, particle_t *p2)
 {
     double fx;
     double fy;
@@ -72,7 +72,7 @@ void compute_force_cell_cell(particle_t *p1, particle_t *p2)
  * @brief Compute the force between a particle and the center of mass of a cell,
  * accumulating the force in the particle
  */
-void compute_force_cell_cm(particle_t *p, center_of_mass_t *cm)
+void compute_force_particle_cm(particle_t *p, center_of_mass_t *cm)
 {
     double fx;
     double fy;
@@ -88,7 +88,7 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
     for (long long i = j + 1; i < cell->n_part; i++) {
         particle_t *p2 = &par[cell->part_idx[i]];
         if (p2->m != 0) {
-            compute_force_cell_cell(p1, p2);
+            compute_force_particle_particle(p1, p2);
         }
     }
 
@@ -96,7 +96,7 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
     for (int i = 0; i < ADJ_CELLS; i++) {
         center_of_mass_t *adj_cell = &adj_cells[i];
         if (adj_cell->m != 0) {
-            compute_force_cell_cm(p1, adj_cell);
+            compute_force_particle_cm(p1, adj_cell);
         }
     }
 }
