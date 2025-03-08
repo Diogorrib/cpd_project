@@ -68,11 +68,19 @@ void compute_new_positions(double side, long ncside, long long n_part, particle_
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
-        p->x += p->vx * DELTAT + 0.5 * p->ax * DELTAT * DELTAT;
-        p->y += p->vy * DELTAT + 0.5 * p->ay * DELTAT * DELTAT;
-        p->vx += p->ax * DELTAT;
-        p->vy += p->ay * DELTAT;
+        double inv_mass = 1.0 / p->m;
+        double ax = p->fx * inv_mass;
+        double ay = p->fy * inv_mass;
+
+        p->x += p->vx * DELTAT + 0.5 * ax * DELTAT * DELTAT;
+        p->y += p->vy * DELTAT + 0.5 * ay * DELTAT * DELTAT;
+        p->vx += ax * DELTAT;
+        p->vy += ay * DELTAT;
         check_outside_space(side, p);
+
+        // reset force for next iteration
+        p->fx = 0;
+        p->fy = 0;
     }
     cleanup_cells(ncside, cells);
     particle_distribution(side, ncside, n_part, par, cells);

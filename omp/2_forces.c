@@ -49,27 +49,54 @@ void compute_force(double x1, double y1, double m1, double x2, double y2, double
     double vecx = dx * inv_dist;
     double vecy = dy * inv_dist;
 
-    *fx += f * vecx;
-    *fy += f * vecy;
+    *fx = f * vecx;
+    *fy = f * vecy;
 }
 
-void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, particle_t *par, center_of_mass_t *adj_cells)
+/**
+ * @brief Compute the force between two particles,
+ * accumulating the force in both particles (avoid duplicate calculations)
+ */
+void compute_force_particle_particle(particle_t *p1, particle_t *p2)
 {
-    double fx = 0;
-    double fy = 0;
+    double fx;
+    double fy;
+    compute_force(p1->x, p1->y, p1->m, p2->x, p2->y, p2->m, &fx, &fy);
 
+    #pragma omp atomic
+    p1->fx += fx;
+    #pragma omp atomic
+    p1->fy += fy;
+
+    #pragma omp atomic
+    p2->fx -= fx;
+    #pragma omp atomic
+    p2->fy -= fy;
+}
+
+/**
+ * @brief Compute the force between a particle and the center of mass of a cell,
+ * accumulating the force in the particle
+ */
+void compute_force_particle_cm(particle_t *p, center_of_mass_t *cm)
+{
+    double fx;
+    double fy;
+    compute_force(p->x, p->y, p->m, cm->x, cm->y, cm->m, &fx, &fy);
+
+    #pragma omp atomic
+    p->fx += fx;
+    #pragma omp atomic
+    p->fy += fy;
+}
+
+void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t *par, center_of_mass_t *adj_cells)
+{
     // particles in the same cell
-    for (long long i = 0; i < cell->n_part; i++) {
-        long long p2_idx = cell->part_idx[i];
-        if (p2_idx == p1_idx) continue;
-
-        particle_t *p2 = &par[p2_idx];
+    for (long long i = j + 1; i < cell->n_part; i++) {
+        particle_t *p2 = &par[cell->part_idx[i]];
         if (p2->m != 0) {
-            compute_force(
-                p1->x, p1->y, p1->m,
-                p2->x, p2->y, p2->m,
-                &fx, &fy
-            );
+            compute_force_particle_particle(p1, p2);
         }
     }
 
@@ -77,17 +104,9 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long p1_idx, partic
     for (int i = 0; i < ADJ_CELLS; i++) {
         center_of_mass_t *adj_cell = &adj_cells[i];
         if (adj_cell->m != 0) {
-            compute_force(
-                p1->x, p1->y, p1->m,
-                adj_cell->x, adj_cell->y, adj_cell->m,
-                &fx, &fy
-            );
+            compute_force_particle_cm(p1, adj_cell);
         }
     }
-
-    double inv_mass = 1.0 / p1->m;
-    p1->ax = fx * inv_mass;
-    p1->ay = fy * inv_mass;
 }
 
 /**
@@ -109,12 +128,11 @@ void compute_forces(double side, long ncside, particle_t *par, cell_t *cells)
 
         center_of_mass_t adj_cells[ADJ_CELLS];
         get_adj_indexes(side, ncside, i, cells, adj_cells);
-        #pragma omp parallel for schedule(auto) 
+        #pragma omp parallel for schedule(auto)
         for (long long j = 0; j < cell->n_part; j++) {
-            long long p_idx = cell->part_idx[j];
-            particle_t *p = &par[p_idx];
+            particle_t *p = &par[cell->part_idx[j]];
             if (p->m != 0) {
-                compute_acc_for_part(cell, p, p_idx, par, adj_cells);
+                compute_acc_for_part(cell, p, j, par, adj_cells);
             }
         }
     }

@@ -5,7 +5,7 @@
 
 typedef struct {
     double x, y, vx, vy, m;
-    double ax, ay;
+    double fx, fy;
     long long cell_idx;
 } particle_t;
 
