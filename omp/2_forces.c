@@ -63,14 +63,10 @@ void compute_force_particle_particle(particle_t *p1, particle_t *p2)
     double fy;
     compute_force(p1->x, p1->y, p1->m, p2->x, p2->y, p2->m, &fx, &fy);
 
-    #pragma omp atomic
     p1->fx += fx;
-    #pragma omp atomic
     p1->fy += fy;
 
-    #pragma omp atomic
     p2->fx -= fx;
-    #pragma omp atomic
     p2->fy -= fy;
 }
 
@@ -84,9 +80,7 @@ void compute_force_particle_cm(particle_t *p, center_of_mass_t *cm)
     double fy;
     compute_force(p->x, p->y, p->m, cm->x, cm->y, cm->m, &fx, &fy);
 
-    #pragma omp atomic
     p->fx += fx;
-    #pragma omp atomic
     p->fy += fy;
 }
 
@@ -128,7 +122,7 @@ void compute_forces(double side, long ncside, particle_t *par, cell_t *cells)
 
         center_of_mass_t adj_cells[ADJ_CELLS];
         get_adj_indexes(side, ncside, i, cells, adj_cells);
-        #pragma omp parallel for schedule(auto)
+        //#pragma omp parallel for schedule(auto)
         for (long long j = 0; j < cell->n_part; j++) {
             particle_t *p = &par[cell->part_idx[j]];
             if (p->m != 0) {
