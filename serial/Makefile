@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2 -fopenmp -Wall -Wextra -Werror
+CFLAGS = -O2 -fopenmp -Wall -Wextra -Werror #-g # uncomment to use vtune
 LDFLAGS = -lm
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
