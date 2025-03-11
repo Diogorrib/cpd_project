@@ -10,6 +10,10 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+export OMP_NUM_THREADS=$(nproc)  # For Linux
+# export OMP_NUM_THREADS=$(sysctl -n hw.ncpu)  # For macOS
+echo "Using $OMP_NUM_THREADS threads for OpenMP execution..."
+
 PROJ_DIR="$1"
 
 for input_file in "$TEST_DIR"/*.in; do

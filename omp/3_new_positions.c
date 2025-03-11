@@ -16,14 +16,12 @@ void particle_distribution(double side, long ncside, long long n_part, particle_
     long long n_cells = ncside * ncside;
 
     // init / reset cells
-    #pragma omp parallel for
+    #pragma omp for
     for (long long i = 0; i < n_cells; i++) {
-        cell_t *cell = &cells[i];
-        cell->n_part = 0;
-        omp_init_lock(&(cell->cell_lock));
+        cells[i].n_part = 0;
     }
 
-    #pragma omp parallel for
+    #pragma omp for schedule(guided, 1)
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
@@ -63,25 +61,28 @@ void check_outside_space(double side, particle_t *p)
  */
 void compute_new_positions(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
-    #pragma omp parallel for
-    for (long long i = 0; i < n_part; i++) {
-        particle_t *p = &par[i];
-        if (p->m == 0) continue;
+    #pragma omp parallel
+    {
+        #pragma omp for
+        for (long long i = 0; i < n_part; i++) {
+            particle_t *p = &par[i];
+            if (p->m == 0) continue;
 
-        double inv_mass = 1.0 / p->m;
-        double ax = p->fx * inv_mass;
-        double ay = p->fy * inv_mass;
+            double inv_mass = 1.0 / p->m;
+            double ax = p->fx * inv_mass;
+            double ay = p->fy * inv_mass;
 
-        p->x += p->vx * DELTAT + 0.5 * ax * DELTAT * DELTAT;
-        p->y += p->vy * DELTAT + 0.5 * ay * DELTAT * DELTAT;
-        p->vx += ax * DELTAT;
-        p->vy += ay * DELTAT;
-        check_outside_space(side, p);
+            p->x += p->vx * DELTAT + 0.5 * ax * DELTAT * DELTAT;
+            p->y += p->vy * DELTAT + 0.5 * ay * DELTAT * DELTAT;
+            p->vx += ax * DELTAT;
+            p->vy += ay * DELTAT;
+            check_outside_space(side, p);
 
-        // reset force for next iteration
-        p->fx = 0;
-        p->fy = 0;
+            // reset force for next iteration
+            p->fx = 0;
+            p->fy = 0;
+        }
+        cleanup_cells(ncside, cells);
+        particle_distribution(side, ncside, n_part, par, cells);
     }
-    cleanup_cells(ncside, cells);
-    particle_distribution(side, ncside, n_part, par, cells);
 }

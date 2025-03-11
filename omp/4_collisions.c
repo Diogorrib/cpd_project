@@ -5,7 +5,6 @@ long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
     long collisions = 0;
     particle_t *p1 = &par[cell->part_idx[j]];
 
-    #pragma omp parallel for reduction(+:collisions)
     for (long long i = j + 1; i < cell->n_part; i++) {
         particle_t *p2 = &par[cell->part_idx[i]];
         if (p1->m == 0 && p2->m == 0) continue;
@@ -37,7 +36,7 @@ long check_collisions(long ncside, particle_t *par, cell_t *cells)
     long collisions = 0;
     long long n_cells = ncside * ncside;
 
-    #pragma omp parallel for reduction(+:collisions)
+    #pragma omp parallel for reduction(+:collisions) schedule(guided, 1)
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         for (long long j = 0; j < cell->n_part; j++) {

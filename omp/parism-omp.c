@@ -41,17 +41,11 @@ int main(int argc, char *argv[])
 
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 
-    // Set number of threads environment variable
-    /* if (setenv("OMP_NUM_THREADS", "10", 1) != 0) {
-        perror("setenv");
-        exit(EXIT_FAILURE);
-    } */
-
     particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
     cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
     init_particles(seed, side, ncside, n_part, par);
 
-    // complete the initialization of the cells (here so the base file can be used)
+    // complete the initialization of the particles (here so the base file can be used)
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         p->fx = 0;
@@ -61,7 +55,11 @@ int main(int argc, char *argv[])
     double exec_time;
     exec_time = -omp_get_wtime();
 
-    particle_distribution(side, ncside, n_part, par, cells);
+    #pragma omp parallel
+    {
+        init_lock_cells(ncside, cells);
+        particle_distribution(side, ncside, n_part, par, cells);
+    }
 
     for (long long t = 0; t < time_steps; t++) {
         collisions += simulation_step(side, ncside, n_part, par, cells);
@@ -71,7 +69,11 @@ int main(int argc, char *argv[])
     fprintf(stderr, "%.1fs\n", exec_time);
 
     print_result(par, collisions);
-    cleanup_cells(ncside, cells);
+    #pragma omp parallel
+    {
+        cleanup_cells(ncside, cells);
+        destroy_lock_cells(ncside, cells);
+    }
     free(cells);
     free(par);
 
