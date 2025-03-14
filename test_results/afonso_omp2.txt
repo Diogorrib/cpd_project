@@ -1,0 +1,26 @@
+[PASS] samples/assignment_01.in
+0.0s
+[PASS] samples/assignment_02.in
+0.0s
+[PASS] samples/assignment_03.in
+0.0s
+[PASS] samples/assignment_04.in
+1.1s
+[PASS] samples/debug_info_01.in
+0.0s
+[PASS] samples/fenix_01.in
+0.9s
+[PASS] samples/fenix_02.in
+19.6s
+[PASS] samples/fenix_03.in
+9.1s
+[PASS] samples/fenix_04.in
+65.0s
+[PASS] samples/fenix_05.in
+65.0s
+[PASS] samples/fenix_06.in
+650.0s
+[PASS] samples/fenix_07.in
+35.1s
+Tests Passed: 12
+Tests Failed: 0

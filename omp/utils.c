@@ -35,6 +35,9 @@ long long get_dynamic_chunk_size(long long n_part)
 void append_particle_index(long long idx, long long cell_idx, particle_t *par, cell_t *cells)
 {
     cell_t *cell = &cells[cell_idx];
+
+    omp_set_lock(&cell->cell_lock);
+
     long long n_part = cell->n_part;
     long long *part_idx = cell->part_idx;
 
@@ -53,15 +56,34 @@ void append_particle_index(long long idx, long long cell_idx, particle_t *par, c
     cell->n_part++;
     cell->part_idx = part_idx;
 
+    omp_unset_lock(&cell->cell_lock);
+
     par[idx].cell_idx = cell_idx;
 }
 
 void cleanup_cells(long ncside, cell_t *cells)
 {
+    #pragma omp for
     for (long long i = 0; i < ncside * ncside; i++) {
         cell_t *cell = &cells[i];
         if (cell->n_part > 0) {
             free(cell->part_idx);
         }
+    }
+}
+
+void init_lock_cells(long ncside, cell_t *cells)
+{
+    #pragma omp for
+    for (long long i = 0; i < ncside * ncside; i++) {
+        omp_init_lock(&cells[i].cell_lock);
+    }
+}
+
+void destroy_lock_cells(long ncside, cell_t *cells)
+{
+    #pragma omp for
+    for (long long i = 0; i < ncside * ncside; i++) {
+        omp_destroy_lock(&cells[i].cell_lock);
     }
 }

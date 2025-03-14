@@ -13,6 +13,7 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
     long long n_cells = ncside * ncside;
     (void)n_part;
 
+    #pragma omp parallel for schedule(guided, 1)
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         cell->x = 0;

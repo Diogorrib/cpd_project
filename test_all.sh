@@ -1,33 +1,34 @@
 #!/bin/bash
 
-PROJ_DIR="serial"
-TEST_DIR="../samples"
+TEST_DIR="samples"
+BASE_SCRIPT="test.sh"
 PASSED=0
 FAILED=0
 
-cd "$PROJ_DIR"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <serial|omp|mpi>"
+    exit 1
+fi
+
+export OMP_NUM_THREADS=$(nproc)  # For Linux
+# export OMP_NUM_THREADS=$(sysctl -n hw.ncpu)  # For macOS
+echo "Using $OMP_NUM_THREADS threads for OpenMP execution..."
+
+PROJ_DIR="$1"
 
 for input_file in "$TEST_DIR"/*.in; do
-    base_name="${input_file%.in}"
+    base_name=$(basename "$input_file" .in)
     expected_output_file="$base_name.out"
 
-    args=$(cat "$input_file")
-    actual_output=$(./parsim $args 2>/tmp/parsim_stderr)
+    bash "$BASE_SCRIPT" "$PROJ_DIR" "$base_name"
 
-    if diff -wB <(echo "$actual_output") "$expected_output_file" >/dev/null; then
-        echo "[PASS] $input_file"
-        cat /tmp/parsim_stderr
+    # Capture the exit status of the original script
+    result=$?
+
+    # Increment counters based on the result
+    if [ $result -eq 0 ]; then
         ((PASSED++))
     else
-        echo "[FAIL] $input_file"
-        echo "Expected:"
-        echo "===================="
-        cat "$expected_output_file"
-        echo "===================="
-        echo "Got:"
-        echo "===================="
-        echo "$actual_output"
-        echo "===================="
         ((FAILED++))
     fi
 done

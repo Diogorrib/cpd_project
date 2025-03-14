@@ -65,6 +65,7 @@ void compute_force_particle_particle(particle_t *p1, particle_t *p2)
 
     p1->fx += fx;
     p1->fy += fy;
+
     p2->fx -= fx;
     p2->fy -= fy;
 }
@@ -114,12 +115,15 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
 void compute_forces(double side, long ncside, particle_t *par, cell_t *cells)
 {
     long long n_cells = ncside * ncside;
+
+    #pragma omp parallel for schedule(guided, 1)
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];
         if (cell->n_part == 0) continue;
 
         center_of_mass_t adj_cells[ADJ_CELLS];
         get_adj_indexes(side, ncside, i, cells, adj_cells);
+
         for (long long j = 0; j < cell->n_part; j++) {
             particle_t *p = &par[cell->part_idx[j]];
             if (p->m != 0) {

@@ -15,6 +15,7 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atol(argv[5]);
 }
+
 long simulation_step(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
 {
     compute_center_of_mass(ncside, n_part, par, cells);
@@ -22,6 +23,7 @@ long simulation_step(double side, long ncside, long long n_part, particle_t *par
     compute_new_positions(side, ncside, n_part, par, cells);
     return check_collisions(ncside, par, cells);
 }
+
 void print_result(particle_t *par, long long collisions)
 {
     fprintf(stdout, "%.3f %.3f\n", par[0].x, par[0].y);
@@ -53,7 +55,12 @@ int main(int argc, char *argv[])
     double exec_time;
     exec_time = -omp_get_wtime();
 
-    particle_distribution(side, ncside, n_part, par, cells);
+    #pragma omp parallel
+    {
+        init_lock_cells(ncside, cells);
+        particle_distribution(side, ncside, n_part, par, cells);
+    }
+
     for (long long t = 0; t < time_steps; t++) {
         collisions += simulation_step(side, ncside, n_part, par, cells);
     }
@@ -62,7 +69,13 @@ int main(int argc, char *argv[])
     fprintf(stderr, "%.1fs\n", exec_time);
 
     print_result(par, collisions);
-    cleanup_cells(ncside, cells);
+    #pragma omp parallel
+    {
+        cleanup_cells(ncside, cells);
+        destroy_lock_cells(ncside, cells);
+    }
     free(cells);
     free(par);
+
+    return 0;
 }
