@@ -1,4 +1,4 @@
-CC = gcc
+CC = mpicc
 CFLAGS = -O2 -fopenmp -Wall -Wextra -Werror #-g # uncomment to use vtune
 LDFLAGS = -lm
 SRCS = $(wildcard *.c)

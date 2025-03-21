@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <mpi.h>
 #include "simulation.h"
 
 void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, long long *n_part, long long *time_steps)
@@ -37,32 +38,43 @@ int main(int argc, char *argv[])
     long long time_steps;   // number of time-steps
     long long collisions = 0;
 
-    parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
+    int id, p;
 
-    particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
-    cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
-    init_particles(seed, side, ncside, n_part, par);
+    MPI_Init (&argc, &argv);
 
-    // complete the initialization of the particles (here so the base file can be used)
-    for (long long i = 0; i < n_part; i++) {
-        particle_t *p = &par[i];
-        p->fx = 0;
-        p->fy = 0;
+    MPI_Comm_rank (MPI_COMM_WORLD, &id);
+    MPI_Comm_size (MPI_COMM_WORLD, &p);
+
+    if (id == 0) {
+        parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
+
+        particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
+        cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
+        init_particles(seed, side, ncside, n_part, par);
+
+        // complete the initialization of the particles (here so the base file can be used)
+        for (long long i = 0; i < n_part; i++) {
+            particle_t *p = &par[i];
+            p->fx = 0;
+            p->fy = 0;
+        }
+
+        double exec_time;
+        exec_time = -omp_get_wtime();
+
+        particle_distribution(side, ncside, n_part, par, cells);
+        for (long long t = 0; t < time_steps; t++) {
+            collisions += simulation_step(side, ncside, n_part, par, cells);
+        }
+
+        exec_time += omp_get_wtime();
+        fprintf(stderr, "%.1fs\n", exec_time);
+
+        print_result(par, collisions);
+        cleanup_cells(ncside, cells);
+        free(cells);
+        free(par);
     }
 
-    double exec_time;
-    exec_time = -omp_get_wtime();
-
-    particle_distribution(side, ncside, n_part, par, cells);
-    for (long long t = 0; t < time_steps; t++) {
-        collisions += simulation_step(side, ncside, n_part, par, cells);
-    }
-
-    exec_time += omp_get_wtime();
-    fprintf(stderr, "%.1fs\n", exec_time);
-
-    print_result(par, collisions);
-    cleanup_cells(ncside, cells);
-    free(cells);
-    free(par);
+    MPI_Finalize();
 }
