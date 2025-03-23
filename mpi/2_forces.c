@@ -112,7 +112,11 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
  * @param cells array of cells
  */
 void compute_forces(double side, long ncside, particle_t *par, cell_t *cells)
-{
+{   
+    int size;
+    
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     long long n_cells = ncside * ncside;
     for (long long i = 0; i < n_cells; i++) {
         cell_t *cell = &cells[i];

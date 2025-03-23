@@ -29,6 +29,27 @@ void print_result(particle_t *par, long long collisions)
     fprintf(stdout, "%lld\n", collisions);
 }
 
+void calculate_range(long ncside, int rank, int processes_count, long long *start, long long *end) {
+    fprintf(stdout, "Rank: %i, Processes: %i\n", rank, processes_count);
+
+    long long total_cells = ncside * ncside;
+    long long chunk_size = total_cells / processes_count;
+    long long remainder = total_cells % processes_count;
+
+    if (rank < remainder) {
+        *start = rank * (chunk_size + 1);
+        *end = *start + chunk_size + 1;
+    } else {
+        *start = rank * chunk_size + remainder;
+        *end = *start + chunk_size; 
+    }
+    if(rank == processes_count-1){
+        *end = *end + 1;
+    }
+
+    printf("Process %d: start = %lld, end = %lld\n", rank, *start, *end);
+}
+
 int main(int argc, char *argv[])
 {
     long seed;              // seed for the random number generator
@@ -38,43 +59,48 @@ int main(int argc, char *argv[])
     long long time_steps;   // number of time-steps
     long long collisions = 0;
 
-    int id, p;
+    int rank, processes_count; 
+    long long cell_i_start, cell_i_end;
 
     MPI_Init (&argc, &argv);
 
-    MPI_Comm_rank (MPI_COMM_WORLD, &id);
-    MPI_Comm_size (MPI_COMM_WORLD, &p);
+    parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 
-    if (id == 0) {
-        parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
+    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+    MPI_Comm_size (MPI_COMM_WORLD, &processes_count);
 
-        particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));
-        cell_t *cells = (cell_t *)allocate_memory(ncside * ncside, sizeof(cell_t));
-        init_particles(seed, side, ncside, n_part, par);
+    long long cell_chunck_size = ncside * ncside / processes_count;
 
-        // complete the initialization of the particles (here so the base file can be used)
-        for (long long i = 0; i < n_part; i++) {
-            particle_t *p = &par[i];
-            p->fx = 0;
-            p->fy = 0;
-        }
+    calculate_range(ncside, rank, processes_count, &cell_i_start, &cell_i_end);
 
-        double exec_time;
-        exec_time = -omp_get_wtime();
+    particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));//FIXME: reduce stored particles per process cells
+    cell_t *cells = (cell_t *)allocate_memory(cell_chunck_size, sizeof(cell_t));
+    init_particles(seed, side, ncside, n_part, par);//fix me, do this dinamically
 
-        particle_distribution(side, ncside, n_part, par, cells);
-        for (long long t = 0; t < time_steps; t++) {
-            collisions += simulation_step(side, ncside, n_part, par, cells);
-        }
+    
 
-        exec_time += omp_get_wtime();
-        fprintf(stderr, "%.1fs\n", exec_time);
-
-        print_result(par, collisions);
-        cleanup_cells(ncside, cells);
-        free(cells);
-        free(par);
+    for (long long i = 0; i < n_part; i++) {
+        particle_t *p = &par[i];
+        p->fx = 0;
+        p->fy = 0;
     }
+
+    double exec_time;
+    exec_time = -omp_get_wtime();
+
+    particle_distribution(side, ncside, n_part, par, cells);
+    for (long long t = 0; t < time_steps; t++) {
+        collisions += simulation_step(side, ncside, n_part, par, cells);
+    }
+
+    exec_time += omp_get_wtime();
+    fprintf(stderr, "%.1fs\n", exec_time);
+
+    print_result(par, collisions);
+    cleanup_cells(ncside, cells);
+    free(cells);
+    free(par);
+
 
     MPI_Finalize();
 }
