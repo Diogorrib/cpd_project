@@ -32,4 +32,5 @@ void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell
             cell->y *= inv_mass;
         }
     }
+    //TODO: Send the center of mass to the adjacent processes
 }

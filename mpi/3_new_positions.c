@@ -27,9 +27,10 @@ void particle_distribution(double side, long ncside, long long n_part, particle_
         long cell_x_idx = (long)(p->x * inv_cell_side);
         long cell_y_idx = (long)(p->y * inv_cell_side);
         long long cell_idx = cell_x_idx + cell_y_idx * ncside;
-
+        //TODO: Check if cell in the process space 
         append_particle_index(i, cell_idx, par, cells);
     }
+    //TODO: Send particles that moved to another process(ignore in the first execution)
 }
 
 void check_outside_space(double side, particle_t *p)

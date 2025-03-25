@@ -40,6 +40,8 @@ void init_particles(long userseed, double side, long ncside, long long n_part, p
     
     init_r4uni(userseed);
 
+    //TODO: Local part variable
+
     for(i = 0; i < n_part; i++) {
         par[i].x = rnd01() * side;
         par[i].y = rnd01() * side;
@@ -47,5 +49,10 @@ void init_particles(long userseed, double side, long ncside, long long n_part, p
         par[i].vy = (rnd01() - 0.5) * side / ncside / 5.0;
 
         par[i].m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
+        /*TODO: check if the particle is from the process space with the #particle_destribution, ignoring send messaages
+          Allocate the particle array dynamicaly 
+        */
+
+        
     }
 }

@@ -4,6 +4,11 @@
 #include <mpi.h>
 #include "simulation.h"
 
+#define BLOCK_LOW(id, p, ncside) ((id) * (ncside) / (p))
+#define BLOCK_HIGH(id, p, ncside) (BLOCK_LOW((id) + 1, p, ncside) - 1)
+#define BLOCK_SIZE(id, p, ncside) (BLOCK_HIGH(id, p, ncside) - BLOCK_LOW(id, p, ncside) + 1)
+#define BLOCK_OWNER(index, p, ncside) (((p) * ((index) + 1) - 1) / (ncside))
+
 void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, long long *n_part, long long *time_steps)
 {
     if (argc != 6) {
@@ -29,27 +34,6 @@ void print_result(particle_t *par, long long collisions)
     fprintf(stdout, "%lld\n", collisions);
 }
 
-void calculate_range(long ncside, int rank, int processes_count, long long *start, long long *end) {
-    fprintf(stdout, "Rank: %i, Processes: %i\n", rank, processes_count);
-
-    long long total_cells = ncside * ncside;
-    long long chunk_size = total_cells / processes_count;
-    long long remainder = total_cells % processes_count;
-
-    if (rank < remainder) {
-        *start = rank * (chunk_size + 1);
-        *end = *start + chunk_size + 1;
-    } else {
-        *start = rank * chunk_size + remainder;
-        *end = *start + chunk_size; 
-    }
-    if(rank == processes_count-1){
-        *end = *end + 1;
-    }
-
-    printf("Process %d: start = %lld, end = %lld\n", rank, *start, *end);
-}
-
 int main(int argc, char *argv[])
 {
     long seed;              // seed for the random number generator
@@ -60,7 +44,8 @@ int main(int argc, char *argv[])
     long long collisions = 0;
 
     int rank, processes_count; 
-    long long cell_i_start, cell_i_end;
+
+    long block_low, block_high, block_size;
 
     MPI_Init (&argc, &argv);
 
@@ -69,17 +54,21 @@ int main(int argc, char *argv[])
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
     MPI_Comm_size (MPI_COMM_WORLD, &processes_count);
 
-    long long cell_chunck_size = ncside * ncside / processes_count;
+    block_low = BLOCK_LOW(rank, processes_count, ncside);
+    block_high = BLOCK_HIGH(rank, processes_count, ncside);
+    block_size = BLOCK_SIZE(rank, processes_count, ncside);
 
-    calculate_range(ncside, rank, processes_count, &cell_i_start, &cell_i_end);
 
+    fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
+        rank, block_low, block_high, block_size);
+        
     particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));//FIXME: reduce stored particles per process cells
-    cell_t *cells = (cell_t *)allocate_memory(cell_chunck_size, sizeof(cell_t));
-    init_particles(seed, side, ncside, n_part, par);//fix me, do this dinamically
+    cell_t *cells = (cell_t *)allocate_memory(block_size*ncside, sizeof(cell_t));
+    init_particles(seed, side, ncside, n_part, par);//FIXME: do this dinamically
 
     
 
-    for (long long i = 0; i < n_part; i++) {
+    for (long long i = 0; i < n_part; i++) { 
         particle_t *p = &par[i];
         p->fx = 0;
         p->fy = 0;
@@ -92,11 +81,10 @@ int main(int argc, char *argv[])
     for (long long t = 0; t < time_steps; t++) {
         collisions += simulation_step(side, ncside, n_part, par, cells);
     }
-
+    //TODO: Accomulate collisions from all processes
     exec_time += omp_get_wtime();
     fprintf(stderr, "%.1fs\n", exec_time);
-
-    print_result(par, collisions);
+    print_result(par, collisions); //TODO: print the result from the root process
     cleanup_cells(ncside, cells);
     free(cells);
     free(par);
