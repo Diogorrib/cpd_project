@@ -62,9 +62,9 @@ int main(int argc, char *argv[])
     fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
         rank, block_low, block_high, block_size);
         
-    particle_t *par = (particle_t *)allocate_memory(n_part, sizeof(particle_t));//FIXME: reduce stored particles per process cells
+    particle_t *par;
     cell_t *cells = (cell_t *)allocate_memory(block_size*ncside, sizeof(cell_t));
-    init_particles(seed, side, ncside, n_part, par);//FIXME: do this dinamically
+    n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &par);
 
     
 

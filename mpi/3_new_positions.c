@@ -24,9 +24,7 @@ void particle_distribution(double side, long ncside, long long n_part, particle_
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
-        long cell_x_idx = (long)(p->x * inv_cell_side);
-        long cell_y_idx = (long)(p->y * inv_cell_side);
-        long long cell_idx = cell_x_idx + cell_y_idx * ncside;
+        long long cell_idx = get_cell_idx(inv_cell_side, ncside, p);
         //TODO: Check if cell in the process space 
         append_particle_index(i, cell_idx, par, cells);
     }

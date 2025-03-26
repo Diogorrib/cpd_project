@@ -56,6 +56,21 @@ void append_particle_index(long long idx, long long cell_idx, particle_t *par, c
     par[idx].cell_idx = cell_idx;
 }
 
+int part_process_space(long ncside, double side, long block_low, long block_high, particle_t *p){
+    double inv_cell_side = ncside / side;
+    long long cell_x_idx = get_cell_idx(inv_cell_side, ncside, p);
+    if(cell_x_idx >= block_low*ncside && cell_x_idx < block_high*ncside){
+        return 1;
+    }
+    return 0;
+}
+
+long long get_cell_idx(double inv_cell_side, long ncside, particle_t *p){
+    long cell_x_idx = (long)(p->x * inv_cell_side);
+    long cell_y_idx = (long)(p->y * inv_cell_side);
+    return cell_x_idx + cell_y_idx * ncside;
+}
+
 void cleanup_cells(long ncside, cell_t *cells)
 {
     for (long long i = 0; i < ncside * ncside; i++) {

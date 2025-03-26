@@ -1,5 +1,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <stdio.h>
+#include "utils.h"
 #include "constant.h"
 #include "particle.h"
 
@@ -28,10 +30,10 @@ double rnd_normal01()
     return result;
 }
 
-void init_particles(long userseed, double side, long ncside, long long n_part, particle_t *par)
+long long init_particles(long userseed, double side, long ncside, long long n_part, long block_low, long block_high, particle_t **par)
 {
     double (*rnd01)() = rnd_uniform01;
-    long long i;
+    long long chunk_size, i, j = 0;
 
     if(userseed < 0) {
         rnd01 = rnd_normal01;
@@ -40,19 +42,30 @@ void init_particles(long userseed, double side, long ncside, long long n_part, p
     
     init_r4uni(userseed);
 
-    //TODO: Local part variable
-
     for(i = 0; i < n_part; i++) {
-        par[i].x = rnd01() * side;
-        par[i].y = rnd01() * side;
-        par[i].vx = (rnd01() - 0.5) * side / ncside / 5.0;
-        par[i].vy = (rnd01() - 0.5) * side / ncside / 5.0;
+        particle_t p;
+        p.x = rnd01() * side;
+        p.y = rnd01() * side;
+        p.vx = (rnd01() - 0.5) * side / ncside / 5.0;
+        p.vy = (rnd01() - 0.5) * side / ncside / 5.0;
 
-        par[i].m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
-        /*TODO: check if the particle is from the process space with the #particle_destribution, ignoring send messaages
-          Allocate the particle array dynamicaly 
-        */
-
-        
+        p.m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
+        if(part_process_space(ncside, side, block_low, block_high, &p)) {
+            chunk_size = get_dynamic_chunk_size(j);
+            
+            if (j == 0) {
+                *par = (particle_t *)malloc(chunk_size * sizeof(particle_t));
+            } else if (j % chunk_size == 0) {
+                *par = (particle_t *)realloc(*par, (j + chunk_size) * sizeof(particle_t));
+            }
+            if (!*par) {
+                fprintf(stderr, "Memory allocation failed\n");
+                exit(EXIT_FAILURE);
+            }
+            
+            (*par)[j] = p;
+            j++;
+        }
     }
+    return j;
 }
