@@ -59,7 +59,7 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
                 *par = (particle_t *)realloc(*par, (j + chunk_size) * sizeof(particle_t));
             }
             if (!*par) {
-                fprintf(stderr, "Memory allocation failed\n");
+                fprintf(stderr, "Memory allocation failed (1)\n");
                 exit(EXIT_FAILURE);
             }
             

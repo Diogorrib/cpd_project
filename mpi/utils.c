@@ -5,7 +5,7 @@ void* allocate_memory(size_t n_elements, size_t element_size)
 {
     void *array = malloc(n_elements * element_size);
     if (!array) {
-        fprintf(stderr, "Memory allocation failed\n");
+        fprintf(stderr, "Memory allocation failed (2)\n");
         exit(EXIT_FAILURE);
     }
     return array;
@@ -45,7 +45,7 @@ void append_particle_index(long long idx, long long cell_idx, particle_t *par, c
         part_idx = (long long *)realloc(part_idx, (n_part + chunk_size) * sizeof(long long));
     }
     if (!part_idx) {
-        fprintf(stderr, "Memory allocation failed\n");
+        fprintf(stderr, "Memory allocation failed (3) %lld\n", cell_idx);
         exit(EXIT_FAILURE);
     }
 
@@ -65,15 +65,22 @@ int part_process_space(long ncside, double side, long block_low, long block_high
     return 0;
 }
 
+int cell_process_space(long ncside, long block_low, long block_size,  long long cells_idx){
+    if(cells_idx >= block_low*ncside && cells_idx < (block_low + block_size)*ncside){
+        return 1;
+    }
+    return 0;
+}
+
 long long get_cell_idx(double inv_cell_side, long ncside, particle_t *p){
     long cell_x_idx = (long)(p->x * inv_cell_side);
     long cell_y_idx = (long)(p->y * inv_cell_side);
     return cell_x_idx + cell_y_idx * ncside;
 }
 
-void cleanup_cells(long ncside, cell_t *cells)
+void cleanup_cells(long ncside, long long blocks_size, cell_t *cells)
 {
-    for (long long i = 0; i < ncside * ncside; i++) {
+    for (long long i = 0; i < ncside * blocks_size; i++) {
         cell_t *cell = &cells[i];
         if (cell->n_part > 0) {
             free(cell->part_idx);

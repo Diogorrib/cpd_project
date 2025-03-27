@@ -21,12 +21,12 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atol(argv[5]);
 }
-long simulation_step(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)
+long simulation_step(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
-    compute_center_of_mass(ncside, n_part, par, cells);
-    compute_forces(side, ncside, par, cells);
-    compute_new_positions(side, ncside, n_part, par, cells);
-    return check_collisions(ncside, par, cells);
+    compute_center_of_mass(ncside, block_size, n_part, par, cells);
+    compute_forces(side, ncside, block_size, par, cells);
+    compute_new_positions(side, ncside, block_size, block_low, n_part, par, cells);
+    return check_collisions(ncside, block_size, par, cells);
 }
 void print_result(particle_t *par, long long collisions)
 {
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     long ncside;            // size of the grid (number of cells on each side)
     long long n_part;       // number of particles
     long long time_steps;   // number of time-steps
-    long long collisions = 0;
+    long long total_collisions, collisions = 0;
 
     int rank, processes_count; 
 
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         rank, block_low, block_high, block_size);
         
     particle_t *par;
-    cell_t *cells = (cell_t *)allocate_memory(block_size*ncside, sizeof(cell_t));
+    cell_t *cells = (cell_t *)allocate_memory(ncside*block_size, sizeof(cell_t));
     n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &par);
 
     
@@ -77,15 +77,23 @@ int main(int argc, char *argv[])
     double exec_time;
     exec_time = -omp_get_wtime();
 
-    particle_distribution(side, ncside, n_part, par, cells);
+    particle_distribution(side, ncside, block_size, block_low, n_part, par, cells);
     for (long long t = 0; t < time_steps; t++) {
-        collisions += simulation_step(side, ncside, n_part, par, cells);
+        collisions += simulation_step(side, ncside, block_size, block_low, n_part, par, cells);
     }
     //TODO: Accomulate collisions from all processes
+
+    MPI_Reduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Total collisions: %lld\n", total_collisions);
+    }
+
     exec_time += omp_get_wtime();
     fprintf(stderr, "%.1fs\n", exec_time);
     print_result(par, collisions); //TODO: print the result from the root process
-    cleanup_cells(ncside, cells);
+    cleanup_cells(ncside, block_size, cells);
     free(cells);
     free(par);
 

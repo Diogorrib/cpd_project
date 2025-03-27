@@ -4,13 +4,14 @@
  * @brief Compute the center of mass for each cell
  * 
  * @param ncside number of cells on each side
+ * @param block_size number of cells in the block
  * @param n_part number of particles
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_center_of_mass(long ncside, long long n_part, particle_t *par, cell_t *cells)
+void compute_center_of_mass(long ncside, long long block_size, long long n_part, particle_t *par, cell_t *cells)
 {
-    long long n_cells = ncside * ncside;
+    long long n_cells = ncside * block_size;
     (void)n_part;
 
     for (long long i = 0; i < n_cells; i++) {
