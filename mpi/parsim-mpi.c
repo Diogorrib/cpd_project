@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         rank, block_low, block_high, block_size); */
         
     particle_t *par;
-    cell_t *cells = (cell_t *)allocate_memory((ncside+3)*block_size, sizeof(cell_t));//FIXME should be (ncside+2)*block_size
+    cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t));//FIXME should be (block_size+2)*block_size
     n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &first, &par);
 
     
