@@ -11,11 +11,11 @@
  */
 void compute_center_of_mass(long ncside, long long block_size, long long n_part, particle_t *par, cell_t *cells)
 {
-    long long n_cells = ncside * block_size;
+    long long n_cells_process = ncside * block_size;
     (void)n_part;
 
-    for (long long i = 0; i < n_cells; i++) {
-        cell_t *cell = &cells[i];
+    for (long long i = 0; i < n_cells_process; i++) {
+        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process
         cell->x = 0;
         cell->y = 0;
         cell->m = 0;

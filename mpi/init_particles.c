@@ -30,7 +30,7 @@ double rnd_normal01()
     return result;
 }
 
-long long init_particles(long userseed, double side, long ncside, long long n_part, long block_low, long block_high, particle_t **par)
+long long init_particles(long userseed, double side, long ncside, long long n_part, long block_low, long block_high, int *first, particle_t **par)
 {
     double (*rnd01)() = rnd_uniform01;
     long long chunk_size, i, j = 0;
@@ -51,6 +51,10 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
 
         p.m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
         if(part_process_space(ncside, side, block_low, block_high, &p)) {
+            if(i == 0) {
+                (*first) = 1;    
+            }
+
             chunk_size = get_dynamic_chunk_size(j);
             
             if (j == 0) {

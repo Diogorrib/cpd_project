@@ -15,7 +15,7 @@
 void particle_distribution(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
     double inv_cell_side = ncside / side;
-    long long n_cells = ncside * block_size;
+    long long n_cells = (ncside+2) * block_size;
 
     // init / reset cells
     for (long long i = 0; i < n_cells; i++) {
@@ -29,7 +29,7 @@ void particle_distribution(double side, long ncside, long long block_size, long 
         long long cell_idx = get_cell_idx(inv_cell_side, ncside, p);
         
         if(cell_process_space(ncside, block_low, block_size, cell_idx)){
-            cell_idx -= block_low*ncside;
+            cell_idx += -block_low*ncside + ncside;
 
             append_particle_index(i, cell_idx, par, cells);
         } else {

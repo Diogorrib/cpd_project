@@ -35,7 +35,7 @@ long check_collisions(long ncside, long long block_size, particle_t *par, cell_t
     long collisions = 0;
     long long n_cells = ncside * block_size;
     for (long long i = 0; i < n_cells; i++) {
-        cell_t *cell = &cells[i];
+        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process
         for (long long j = 0; j < cell->n_part; j++) {
             collisions += check_collisions_for_part(cell, j, par);
         }

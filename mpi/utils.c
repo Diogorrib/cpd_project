@@ -80,7 +80,7 @@ long long get_cell_idx(double inv_cell_side, long ncside, particle_t *p){
 
 void cleanup_cells(long ncside, long long blocks_size, cell_t *cells)
 {
-    for (long long i = 0; i < ncside * blocks_size; i++) {
+    for (long long i = 0; i < (ncside+2) * blocks_size; i++) {
         cell_t *cell = &cells[i];
         if (cell->n_part > 0) {
             free(cell->part_idx);

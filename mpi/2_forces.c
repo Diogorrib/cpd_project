@@ -116,7 +116,7 @@ void compute_forces(double side, long ncside, long long block_size, particle_t *
 {   
     long long n_cells = ncside * block_size;
     for (long long i = 0; i < n_cells; i++) {
-        cell_t *cell = &cells[i];
+        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process
         if (cell->n_part == 0) continue;
 
         center_of_mass_t adj_cells[ADJ_CELLS];
