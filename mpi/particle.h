@@ -1,5 +1,9 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
+#include <mpi.h>
+
+
+extern MPI_Datatype cell_type;
 
 typedef struct {
     double x, y, vx, vy, m;

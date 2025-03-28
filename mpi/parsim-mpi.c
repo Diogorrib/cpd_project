@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
     long block_low, block_high, block_size;
 
     MPI_Init (&argc, &argv);
+    MPI_Datatype cell_type;
 
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 

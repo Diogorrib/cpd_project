@@ -15,22 +15,20 @@
 void particle_distribution(double side, long ncside, long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
     double inv_cell_side = ncside / side;
-    long long n_cells = (ncside+2) * block_size;
+    long long n_local_cells = ncside * block_size;
 
     // init / reset cells
-    for (long long i = 0; i < n_cells; i++) {
-        cells[i].n_part = 0;
+    for (long long i = 0; i < n_local_cells; i++) {
+        cells[i+ncside].n_part = 0;
     }
 
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
-        long long cell_idx = get_cell_idx(inv_cell_side, ncside, p);
-        
-        if(cell_process_space(ncside, block_low, block_size, cell_idx)){
-            cell_idx += -block_low*ncside + ncside;
+        long long cell_idx = get_cell_idx(inv_cell_side, ncside, block_low, p);
 
+        if(cell_process_space(ncside, block_low, block_size, cell_idx)){
             append_particle_index(i, cell_idx, par, cells);
         } else {
         }

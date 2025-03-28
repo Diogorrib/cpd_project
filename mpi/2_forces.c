@@ -1,7 +1,7 @@
 #include <math.h>
 #include "simulation.h"
 
-void get_adj_indexes(double side, long ncside, long long cell_idx, cell_t *cells, center_of_mass_t *adj_cells)
+void get_adj_indexes(double side, long ncside, long block_size, long long cell_idx, cell_t *cells, center_of_mass_t *adj_cells)
 {
     long x = cell_idx % ncside;
     long y = cell_idx / ncside;
@@ -114,9 +114,9 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
  */
 void compute_forces(double side, long ncside, long block_size, particle_t *par, cell_t *cells)
 {   
-    long long n_cells = ncside * block_size;
-    for (long long i = 0; i < n_cells; i++) {
-        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process
+    long long n_local_cells = ncside * block_size;
+    for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
+        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is computed by another process
         if (cell->n_part == 0) continue;
 
         center_of_mass_t adj_cells[ADJ_CELLS];
