@@ -9,10 +9,9 @@
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_center_of_mass(long ncside, long long block_size, long long n_part, particle_t *par, cell_t *cells)
+void compute_center_of_mass(long ncside, long long block_size, particle_t *par, cell_t *cells)
 {
     long long n_cells_process = ncside * block_size;
-    (void)n_part;
 
     for (long long i = 0; i < n_cells_process; i++) {
         cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process

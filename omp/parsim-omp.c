@@ -13,7 +13,7 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *side = atof(argv[2]);
     *ncside = atol(argv[3]);
     *n_part = atoll(argv[4]);
-    *time_steps = atol(argv[5]);
+    *time_steps = atoll(argv[5]);
 }
 
 long simulation_step(double side, long ncside, long long n_part, particle_t *par, cell_t *cells)

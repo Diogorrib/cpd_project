@@ -19,18 +19,18 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *side = atof(argv[2]);
     *ncside = atol(argv[3]);
     *n_part = atoll(argv[4]);
-    *time_steps = atol(argv[5]);
+    *time_steps = atoll(argv[5]);
 }
 long simulation_step(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
-    compute_center_of_mass(ncside, block_size, n_part, par, cells);
+    compute_center_of_mass(ncside, block_size, par, cells);
     compute_forces(side, ncside, block_size, par, cells);
     compute_new_positions(side, ncside, block_size, block_low, n_part, par, cells);
     return check_collisions(ncside, block_size, par, cells);
 }
-void print_result(particle_t *par, long long collisions)
+void print_result(particle_t *part_0, long long collisions)
 {
-    fprintf(stdout, "%.3f %.3f\n", par[0].x, par[0].y);
+    fprintf(stdout, "%.3f %.3f\n", part_0->x, part_0->y);
     fprintf(stdout, "%lld\n", collisions);
 }
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     long long time_steps;   // number of time-steps
     long long total_collisions, collisions = 0;
 
-    int rank, processes_count, first = 0; 
+    int rank, processes_count = 0;
 
     long block_low, block_high, block_size;
 
@@ -58,15 +58,13 @@ int main(int argc, char *argv[])
     block_high = BLOCK_HIGH(rank, processes_count, ncside);
     block_size = BLOCK_SIZE(rank, processes_count, ncside);
 
+    fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
+        rank, block_low, block_high, block_size);
 
-    /* fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
-        rank, block_low, block_high, block_size); */
-        
     particle_t *par;
+    particle_t *particle_0 = NULL;
     cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t));//FIXME should be (block_size+2)*block_size
-    n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &first, &par);
-
-    
+    n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &particle_0, &par);
 
     for (long long i = 0; i < n_part; i++) { 
         particle_t *p = &par[i];
@@ -87,13 +85,12 @@ int main(int argc, char *argv[])
 
     exec_time += omp_get_wtime();
     fprintf(stderr, "%.1fs\n", exec_time);
-    if(first == 1){
-        print_result(par, total_collisions); 
+    if(particle_0 != NULL){
+        print_result(particle_0, total_collisions); 
     }
     cleanup_cells(ncside, block_size, cells);
     free(cells);
     free(par);
-
 
     MPI_Finalize();
 }
