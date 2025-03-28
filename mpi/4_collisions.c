@@ -25,12 +25,12 @@ long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
  * mark particles as collided by setting mass to 0
  * 
  * @param ncside number of cells on each side
- * @param block_size number of cells in the block
+ * @param block_size number of rows of cells hold by this process
  * @param par array of particles
  * @param cells array of cells
  * @return long number of collisions
  */
-long check_collisions(long ncside, long long block_size, particle_t *par, cell_t *cells)
+long check_collisions(long ncside, long block_size, particle_t *par, cell_t *cells)
 {
     long collisions = 0;
     long long n_cells = ncside * block_size;

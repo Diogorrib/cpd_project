@@ -4,16 +4,17 @@
  * @brief Compute the center of mass for each cell
  * 
  * @param ncside number of cells on each side
- * @param block_size number of cells in the block
- * @param n_part number of particles
+ * @param block_size number of rows of cells hold by this process
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_center_of_mass(long ncside, long long block_size, particle_t *par, cell_t *cells)
+void compute_center_of_mass(long ncside, long block_size, particle_t *par, cell_t *cells)
 {
-    long long n_cells_process = ncside * block_size;
+    long long n_local_cells = ncside * block_size;
 
-    for (long long i = 0; i < n_cells_process; i++) {
+    // TODO: ASYNC receive 2 rows of center of mass from the adjacent processes
+
+    for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         cell_t *cell = &cells[i+ncside]; // Skip the first row as it is sent from another process
         cell->x = 0;
         cell->y = 0;
@@ -32,5 +33,7 @@ void compute_center_of_mass(long ncside, long long block_size, particle_t *par, 
             cell->y *= inv_mass;
         }
     }
-    //TODO: Send the center of mass to the adjacent processes
+
+    // TODO: send first (0) and last (block_size-1) rows of center of mass to the adjacent processes
+    // TODO: maybe wait for communications to finish
 }

@@ -7,12 +7,12 @@
  * 
  * @param side size of the side of the squared space of simulation
  * @param ncside number of cells on each side
- * @param block_size number of cells in the block
+ * @param block_size number of rows of cells hold by this process
  * @param n_part number of particles
  * @param par array of particles
  * @param cells array of cells
  */
-void particle_distribution(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
+void particle_distribution(double side, long ncside, long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
     double inv_cell_side = ncside / side;
     long long n_cells = (ncside+2) * block_size;
@@ -59,12 +59,12 @@ void check_outside_space(double side, particle_t *p)
  * 
  * @param side size of the side of the squared space of simulation
  * @param ncside number of cells on each side
- * @param block_size number of cells in the block
+ * @param block_size number of rows of cells hold by this process
  * @param n_part number of particles
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_new_positions(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
+void compute_new_positions(double side, long ncside, long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];

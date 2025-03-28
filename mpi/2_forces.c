@@ -107,12 +107,12 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
  * 
  * @param side size of the side of the squared space of simulation
  * @param ncside number of cells on each side
- * @param block_size number of cells in the block
+ * @param block_size number of rows of cells hold by this process
  * @param n_part number of particles
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_forces(double side, long ncside, long long block_size, particle_t *par, cell_t *cells)
+void compute_forces(double side, long ncside, long block_size, particle_t *par, cell_t *cells)
 {   
     long long n_cells = ncside * block_size;
     for (long long i = 0; i < n_cells; i++) {

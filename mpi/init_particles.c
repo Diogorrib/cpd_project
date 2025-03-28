@@ -63,11 +63,9 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
                 exit(EXIT_FAILURE);
             }
 
-            if (i == 0) {
-                p.is_particle_0 = 1;
-            } else {
-                p.is_particle_0 = 0;
-            }
+            p.fx = 0;
+            p.fy = 0;
+            p.is_particle_0 = (i == 0) ? 1 : 0;
 
             // assign particle to the array
             (*par)[j] = p;

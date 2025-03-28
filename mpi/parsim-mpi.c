@@ -28,10 +28,11 @@ long simulation_step(double side, long ncside, long long block_size, long block_
     compute_new_positions(side, ncside, block_size, block_low, n_part, par, cells);
     return check_collisions(ncside, block_size, par, cells);
 }
-void print_result(particle_t *part_0, long long collisions)
+void print_result(particle_t *part_0, long long collisions, double exec_time)
 {
     fprintf(stdout, "%.3f %.3f\n", part_0->x, part_0->y);
     fprintf(stdout, "%lld\n", collisions);
+    fprintf(stderr, "%.1fs\n", exec_time);
 }
 
 int main(int argc, char *argv[])
@@ -58,19 +59,13 @@ int main(int argc, char *argv[])
     block_high = BLOCK_HIGH(rank, processes_count, ncside);
     block_size = BLOCK_SIZE(rank, processes_count, ncside);
 
-    fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
-        rank, block_low, block_high, block_size);
+    /* fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
+        rank, block_low, block_high, block_size); */
 
     particle_t *par;
     particle_t *particle_0 = NULL;
-    cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t));//FIXME should be (block_size+2)*block_size
+    cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t)); // account for adjacent rows
     n_part = init_particles(seed, side, ncside, n_part, block_low, block_high, &particle_0, &par);
-
-    for (long long i = 0; i < n_part; i++) { 
-        particle_t *p = &par[i];
-        p->fx = 0;
-        p->fy = 0;
-    }
 
     double exec_time;
     exec_time = -omp_get_wtime();
@@ -84,9 +79,8 @@ int main(int argc, char *argv[])
     MPI_Barrier(MPI_COMM_WORLD);
 
     exec_time += omp_get_wtime();
-    fprintf(stderr, "%.1fs\n", exec_time);
     if(particle_0 != NULL){
-        print_result(particle_0, total_collisions); 
+        print_result(particle_0, total_collisions, exec_time); 
     }
     cleanup_cells(ncside, block_size, cells);
     free(cells);
