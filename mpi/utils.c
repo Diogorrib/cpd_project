@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include "utils.h"
+#include <mpi.h>
+
+MPI_Datatype cell_type;
 
 void* allocate_memory(size_t n_elements, size_t element_size)
 {
@@ -86,4 +89,19 @@ void cleanup_cells(long ncside, long long blocks_size, cell_t *cells)
             free(cell->part_idx);
         }
     }
+}
+
+void create_mpi_cell_type() 
+{
+    int block_lengths[3] = {1, 1, 1};  // Each field is 1 value
+    MPI_Aint displacements[3];         // Memory offsets
+    MPI_Datatype types[3] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};  // Data types
+
+    displacements[0] = offsetof(cell_t, x);
+    displacements[1] = offsetof(cell_t, y);
+    displacements[2] = offsetof(cell_t, m);
+
+    // Create the structured datatype
+    MPI_Type_create_struct(3, block_lengths, displacements, types, &cell_type);
+    MPI_Type_commit(&cell_type);
 }
