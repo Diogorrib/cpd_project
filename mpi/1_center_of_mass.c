@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include "comm_utils.h"
 
 /**
  * @brief Compute the center of mass for each cell
@@ -8,7 +9,7 @@
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_center_of_mass(long ncside, long block_size, particle_t *par, cell_t *cells)
+void compute_center_of_mass(int rank, int process_count, long ncside, long block_size, particle_t *par, cell_t *cells)
 {
     long long n_local_cells = ncside * block_size;
 
@@ -34,6 +35,7 @@ void compute_center_of_mass(long ncside, long block_size, particle_t *par, cell_
         }
     }
 
+    exchange_boundaries(ncside, block_size, cells, rank, process_count, cell_type);
     // TODO: send first (0) and last (block_size-1) rows of center of mass to the adjacent processes
     // TODO: maybe wait for communications to finish
 }

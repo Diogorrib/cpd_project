@@ -21,9 +21,9 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atoll(argv[5]);
 }
-long simulation_step(double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
+long simulation_step(int rank, int process_count, double side, long ncside, long long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
 {
-    compute_center_of_mass(ncside, block_size, par, cells);
+    compute_center_of_mass(rank, process_count, ncside, block_size, par, cells);
     compute_forces(side, ncside, block_size, par, cells);
     compute_new_positions(side, ncside, block_size, block_low, n_part, par, cells);
     return check_collisions(ncside, block_size, par, cells);
@@ -49,8 +49,18 @@ int main(int argc, char *argv[])
     long block_low, block_high, block_size;
 
     MPI_Init (&argc, &argv);
+    
+    //Define center of mass mpi type 
+    MPI_Datatype cell_type;
+    (void)cell_type;
+    create_mpi_cell_type();
 
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
+
+    //Define row mpi type
+    MPI_Datatype row_type;
+    MPI_Type_contiguous(ncside, MPI_DOUBLE, &row_type);
+    MPI_Type_commit(&row_type);
 
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
     MPI_Comm_size (MPI_COMM_WORLD, &processes_count);
@@ -72,7 +82,7 @@ int main(int argc, char *argv[])
 
     particle_distribution(side, ncside, block_size, block_low, n_part, par, cells);
     for (long long t = 0; t < time_steps; t++) {
-        collisions += simulation_step(side, ncside, block_size, block_low, n_part, par, cells);
+        collisions += simulation_step(rank, processes_count, side, ncside, block_size, block_low, n_part, par, cells);
     }
 
     MPI_Allreduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);

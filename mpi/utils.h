@@ -11,5 +11,6 @@ int cell_process_space(long ncside, long block_low, long block_size,  long long 
 long long get_dynamic_chunk_size(long long n_part);
 long long get_cell_idx(double inv_cell_side, long ncside, particle_t *p);
 void cleanup_cells(long ncside, long long block_size, cell_t *cells);
+void create_mpi_cell_type();
 
 #endif // UTILS_H
