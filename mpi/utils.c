@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include <mpi.h>
 #include "utils.h"
+#include "globals.h"
 
-MPI_Datatype cell_type;
+#include <mpi.h>
 
 void* allocate_memory(size_t n_elements, size_t element_size)
 {
-    void *array = malloc(n_elements * element_size);
+    void *array = calloc(n_elements, element_size);
     if (!array) {
         fprintf(stderr, "Memory allocation failed (2)\n");
         exit(EXIT_FAILURE);
@@ -59,56 +59,35 @@ void append_particle_index(long long idx, long long cell_idx, particle_t *par, c
     par[idx].cell_idx = cell_idx;
 }
 
-/* int part_process_space(long ncside, double side, long block_low, long block_high, particle_t *p){
-    double inv_cell_side = ncside / side;
-    long long cell_x_idx = get_cell_idx(inv_cell_side, ncside, p);
-    if(cell_x_idx >= block_low*ncside && cell_x_idx < block_high*ncside){
-        return 1;
-    }
-    return 0;
-} */
-
-/**
- * @brief Check if the cell index is in the process space
- */
-int cell_process_space(long ncside, long block_size, long long cell_idx){
+int cell_in_process_space(long long cell_idx)
+{
     long long aux_idx = cell_idx - ncside;
-    if(aux_idx >= 0 && aux_idx < block_size*ncside) {
+    if (aux_idx >= 0 && aux_idx < block_size * ncside) {
         return 1;
     }
     return 0;
 }
 
-/**
- * @brief Get local cell index for a particle
- */
-long long get_cell_idx(double inv_cell_side, long ncside, long block_low, particle_t *p){
+long long get_global_cell_idx(particle_t *p)
+{
     long cell_x_idx = (long)(p->x * inv_cell_side);
     long cell_y_idx = (long)(p->y * inv_cell_side);
-    long long global_cell_idx = cell_x_idx + cell_y_idx * ncside;
-    return global_cell_idx - (block_low-1) * ncside;
+    return cell_x_idx + cell_y_idx * ncside;
 }
 
-void cleanup_cells(long ncside, long long blocks_size, cell_t *cells)
+long long get_local_cell_idx(particle_t *p)
 {
-    for (long long i = 0; i < (ncside+2) * blocks_size; i++) {
-        cell_t *cell = &cells[i];
+    long long global_idx = get_global_cell_idx(p);
+    return global_idx - (block_low - 1) * ncside;
+}
+
+void cleanup_cells(cell_t *cells)
+{
+    for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
+        long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
+        cell_t *cell = &cells[cell_idx];
         if (cell->n_part > 0) {
             free(cell->part_idx);
         }
     }
-}
-
-void create_mpi_cell_type() {
-    int block_lengths[3] = {1, 1, 1};  // Each field is 1 value
-    MPI_Aint displacements[3];         // Memory offsets
-    MPI_Datatype types[3] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};  // Data types
-
-    displacements[0] = offsetof(cell_t, x);
-    displacements[1] = offsetof(cell_t, y);
-    displacements[2] = offsetof(cell_t, m);
-
-    // Create the structured datatype
-    MPI_Type_create_struct(3, block_lengths, displacements, types, &cell_type);
-    MPI_Type_commit(&cell_type);
 }

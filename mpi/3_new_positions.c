@@ -4,31 +4,25 @@
 /**
  * @brief Distributes particles into cells based on their positions,
  * excluding particles that have collided (mass = 0)
- * 
- * @param side size of the side of the squared space of simulation
- * @param ncside number of cells on each side
- * @param block_size number of rows of cells hold by this process
- * @param n_part number of particles
+ *
  * @param par array of particles
  * @param cells array of cells
  */
-void particle_distribution(double side, long ncside, long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
+void particle_distribution(particle_t *par, cell_t *cells)
 {
-    double inv_cell_side = ncside / side;
-    long long n_local_cells = ncside * block_size;
-
     // init / reset cells
-    for (long long i = 0; i < n_local_cells; i++) {
-        cells[i+ncside].n_part = 0;
+    for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
+        long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
+        cells[cell_idx].n_part = 0;
     }
 
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
-        long long cell_idx = get_cell_idx(inv_cell_side, ncside, block_low, p);
+        long long cell_idx = get_local_cell_idx(p);
 
-        if(cell_process_space(ncside, block_low, block_size, cell_idx)){
+        if(cell_in_process_space(cell_idx)) {
             append_particle_index(i, cell_idx, par, cells);
         } else {
         }
@@ -36,7 +30,7 @@ void particle_distribution(double side, long ncside, long block_size, long block
     //TODO: Send particles that moved to another process(ignore in the first execution)
 }
 
-void check_outside_space(double side, particle_t *p)
+void check_outside_space(particle_t *p)
 {
     if (p->x < 0) {
         p->x += side;
@@ -54,15 +48,11 @@ void check_outside_space(double side, particle_t *p)
 /**
  * @brief  Compute the new velocity and position for each particle,
  * check if new positions are outside the space and update the cells
- * 
- * @param side size of the side of the squared space of simulation
- * @param ncside number of cells on each side
- * @param block_size number of rows of cells hold by this process
- * @param n_part number of particles
+ *
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_new_positions(double side, long ncside, long block_size, long block_low, long long n_part, particle_t *par, cell_t *cells)
+void compute_new_positions(particle_t *par, cell_t *cells)
 {
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
@@ -76,12 +66,12 @@ void compute_new_positions(double side, long ncside, long block_size, long block
         p->y += p->vy * DELTAT + 0.5 * ay * DELTAT * DELTAT;
         p->vx += ax * DELTAT;
         p->vy += ay * DELTAT;
-        check_outside_space(side, p);
+        check_outside_space(p);
 
         // reset force for next iteration
         p->fx = 0;
         p->fy = 0;
     }
-    cleanup_cells(ncside, block_size, cells);
-    particle_distribution(side, ncside, block_size, block_low, n_part, par, cells);
+    cleanup_cells(cells);
+    particle_distribution(par, cells);
 }

@@ -1,7 +1,7 @@
 #include <math.h>
 #include "simulation.h"
 
-void get_adj_indexes(double side, long ncside, long block_size, long long cell_idx, cell_t *cells, center_of_mass_t *adj_cells)
+void get_adj_indexes(long long cell_idx, cell_t *cells, center_of_mass_t *adj_cells)
 {
     long x = cell_idx % ncside;
     long y = cell_idx / ncside;
@@ -18,22 +18,31 @@ void get_adj_indexes(double side, long ncside, long block_size, long long cell_i
     };
 
     for (int i = 0; i < ADJ_CELLS; i++) {
-        double d[2] = {0, 0};
-        for (int j = 0; j < 2; j++) {
-            if (adj[i][j] < 0) {
-                adj[i][j] = ncside - 1;
-                d[j] = -side;
-            } else if (adj[i][j] >= ncside) {
-                adj[i][j] = 0;
-                d[j] = side;
-            }
+        double dx = 0;
+        double dy = 0;
+
+        // get correct x index and correct x distance (wrap around)
+        if (adj[i][0] < 0) {
+            adj[i][0] = ncside - 1;
+            dx = -side;
+        } else if (adj[i][0] >= ncside) {
+            adj[i][0] = 0;
+            dx = side;
         }
+
+        // get correct y distance (wrap around)
+        if (rank == 0) {
+            dy = -side;
+        } else if (rank == process_count - 1) {
+            dy = side;
+        }
+
         long long index = adj[i][0] + adj[i][1] * ncside;
         // fix wrap around
         cell_t *cell = &cells[index];
         center_of_mass_t *adj_cell = &adj_cells[i];
-        adj_cell->x = cell->x + d[0];
-        adj_cell->y = cell->y + d[1];
+        adj_cell->x = cell->x + dx;
+        adj_cell->y = cell->y + dy;
         adj_cell->m = cell->m;
     }
 }
@@ -104,23 +113,19 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
 
 /**
  * @brief Compute the forces for each particle and update the acceleration
- * 
- * @param side size of the side of the squared space of simulation
- * @param ncside number of cells on each side
- * @param block_size number of rows of cells hold by this process
- * @param n_part number of particles
+ *
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_forces(double side, long ncside, long block_size, particle_t *par, cell_t *cells)
+void compute_forces(particle_t *par, cell_t *cells)
 {   
-    long long n_local_cells = ncside * block_size;
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
-        cell_t *cell = &cells[i+ncside]; // Skip the first row as it is computed by another process
+        long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
+        cell_t *cell = &cells[cell_idx];
         if (cell->n_part == 0) continue;
 
         center_of_mass_t adj_cells[ADJ_CELLS];
-        get_adj_indexes(side, ncside, i, cells, adj_cells);
+        get_adj_indexes(cell_idx, cells, adj_cells);
         for (long long j = 0; j < cell->n_part; j++) {
             particle_t *p = &par[cell->part_idx[j]];
             if (p->m != 0) {

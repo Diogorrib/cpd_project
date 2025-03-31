@@ -30,7 +30,7 @@ double rnd_normal01()
     return result;
 }
 
-long long init_particles(long userseed, double side, long ncside, long long n_part, long block_low, long block_size, particle_t **first, particle_t **par)
+long long init_particles(long userseed, double side, long ncside, long long n_part, particle_t **first, particle_t **par)
 {
     double (*rnd01)() = rnd_uniform01;
     long long chunk_size, i, j = 0;
@@ -42,7 +42,6 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
     
     init_r4uni(userseed);
 
-    long long inv_cell_side = ncside / side;
     for(i = 0; i < n_part; i++) {
         particle_t p;
         p.x = rnd01() * side;
@@ -51,9 +50,8 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
         p.vy = (rnd01() - 0.5) * side / ncside / 5.0;
 
         p.m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
-
-        p.cell_idx = get_cell_idx(inv_cell_side, ncside, block_low, &p);
-        if(cell_process_space(ncside, block_low, block_size, p.cell_idx)) {
+        long long cell_idx = get_local_cell_idx(&p);
+        if(cell_in_process_space(cell_idx)){
             chunk_size = get_dynamic_chunk_size(j);
 
             if (j == 0) {
