@@ -6,17 +6,9 @@
 void exchange_boundaries(long ncside, long size, cell_t *cells, int rank, int num_procs, MPI_Datatype row_type) {
     MPI_Status status;
 
-    // Neighboring ranks (circular wrap-around)
-    int prev_rank = rank - 1;
-    int next_rank = rank + 1;
 
-    if(prev_rank < 0) {
-        printf("rank %d is the first process, prev_rank set to %d\n", rank, num_procs - 1);
-        prev_rank = num_procs - 1;
-    }
-    if(next_rank >= num_procs-1) {
-        next_rank = 0;
-    }
+    int prev_rank = (rank - 1 + num_procs) % num_procs;
+    int next_rank = (rank + 1) % num_procs;
 
 
     printf("rank %d exchanging boundaries with rank %d and %d\n", rank, prev_rank, next_rank);
@@ -30,7 +22,7 @@ void exchange_boundaries(long ncside, long size, cell_t *cells, int rank, int nu
     // Send first row to prev rank, receive last row from next rank
     MPI_Sendrecv(first_row, 1, row_type, prev_rank, 0,
                  extra_bottom_row, 1, row_type, next_rank, 0,
-                 MPI_COMM_WORLD, &status);
+                 MPI_COMM_WORLD, &status);            
 
     // Send last row to next rank, receive first row from prev rank
     MPI_Sendrecv(last_row, 1, row_type, next_rank, 1,
