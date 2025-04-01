@@ -14,6 +14,7 @@ particle_t *particle_0 = NULL;
 
 int rank, process_count;
 long block_low, block_size;
+int prev_rank, next_rank;
 
 void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, long long *n_part, long long *time_steps)
 {
@@ -29,8 +30,9 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
 }
 long simulation_step(particle_t *par, cell_t *cells)
 {
-    compute_center_of_mass(par, cells);
-    compute_forces(par, cells);
+    MPI_Request center_of_mass_requests[4];
+    compute_center_of_mass(par, cells, center_of_mass_requests);
+    compute_forces(par, cells, center_of_mass_requests);
     compute_new_positions(par, cells);
     return check_collisions(par, cells);
 }
@@ -49,10 +51,6 @@ int main(int argc, char *argv[])
 
     MPI_Init (&argc, &argv);
 
-    //Define mpi types
-    create_mpi_row_type();
-    create_mpi_cell_type();
-
     parse_args(argc, argv, &seed, &side, &ncside, &n_part, &time_steps);
 
     MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -62,6 +60,12 @@ int main(int argc, char *argv[])
     block_size = BLOCK_SIZE(rank, process_count, ncside);
     n_local_cells = ncside * block_size;
     inv_cell_side = ncside / side;
+
+    // Define mpi types - need to be after MPI_Init and args
+    create_mpi_types_for_cms();
+
+    prev_rank = (rank - 1 + process_count) % process_count;
+    next_rank = (rank + 1) % process_count;
 
     /* fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
         rank, block_low, block_high, block_size); */

@@ -1,5 +1,4 @@
 #include "simulation.h"
-#include "comm_utils.h"
 
 /**
  * @brief Compute the center of mass for each cell
@@ -7,9 +6,9 @@
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_center_of_mass(particle_t *par, cell_t *cells)
+void compute_center_of_mass(particle_t *par, cell_t *cells, MPI_Request *r)
 {
-    // TODO: ASYNC receive 2 rows of center of mass from the adjacent processes
+    async_recv_center_of_mass(cells, r);
 
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
@@ -32,7 +31,5 @@ void compute_center_of_mass(particle_t *par, cell_t *cells)
         }
     }
 
-    exchange_boundaries(cells);
-    // TODO: send first (0) and last (block_size-1) rows of center of mass to the adjacent processes
-    // TODO: maybe wait for communications to finish
+    async_send_center_of_mass(cells, r);
 }

@@ -31,9 +31,9 @@ void get_adj_indexes(long long cell_idx, cell_t *cells, center_of_mass_t *adj_ce
         }
 
         // get correct y distance (wrap around)
-        if (rank == 0) {
+        if (rank == 0 && adj[i][1] == 0) {
             dy = -side;
-        } else if (rank == process_count - 1) {
+        } else if (rank == process_count - 1 && adj[i][1] == block_size + 1) {
             dy = side;
         }
 
@@ -117,8 +117,10 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_forces(particle_t *par, cell_t *cells)
-{   
+void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
+{
+    wait_for_center_of_mass(r);
+
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cell_t *cell = &cells[cell_idx];
@@ -134,3 +136,85 @@ void compute_forces(particle_t *par, cell_t *cells)
         }
     }
 }
+
+
+// NOT IN USE - may lead to higher memory access cost
+
+
+/* // particles in the same cell
+void compute_forces_between_parts(cell_t *cell, particle_t *p1, long long j, particle_t *par)
+{
+    for (long long i = j + 1; i < cell->n_part; i++) {
+        particle_t *p2 = &par[cell->part_idx[i]];
+        if (p2->m != 0) {
+            compute_force_particle_particle(p1, p2);
+        }
+    }
+}
+
+// center of mass of adjacent cells
+void compute_forces_adjacent_cells(particle_t *p, center_of_mass_t *adj_cells)
+{
+    for (int i = 0; i < ADJ_CELLS; i++) {
+        center_of_mass_t *adj_cell = &adj_cells[i];
+        if (adj_cell->m != 0) {
+            compute_force_particle_cm(p, adj_cell);
+        }
+    }
+}
+
+void loop_per_row(particle_t *par, cell_t *cells, long index_adjust)
+{
+    for (long long i = 0; i < ncside; i++) {
+        long long cell_idx = i + index_adjust;
+        cell_t *cell = &cells[cell_idx];
+        if (cell->n_part == 0) continue;
+
+        center_of_mass_t adj_cells[ADJ_CELLS];
+        get_adj_indexes(cell_idx, cells, adj_cells);
+
+        for (long long j = 0; j < cell->n_part; j++) {
+            particle_t *p = &par[cell->part_idx[j]];
+            if (p->m != 0) {
+                compute_forces_adjacent_cells(p, adj_cells);
+            }
+        }
+    }
+}
+
+// maximize the local computations while waiting for the communications
+void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
+{
+    // first loop only needs local cells and particles
+    for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
+        long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
+        cell_t *cell = &cells[cell_idx];
+        if (cell->n_part == 0) continue;
+
+        // first and last rows are ignored since they need to wait for the adjacent cells
+        if (i >= ncside && i < n_local_cells - ncside) {
+            center_of_mass_t adj_cells[ADJ_CELLS];
+            get_adj_indexes(cell_idx, cells, adj_cells);
+
+            for (long long j = 0; j < cell->n_part; j++) {
+                particle_t *p = &par[cell->part_idx[j]];
+                if (p->m != 0) {
+                    compute_forces_between_parts(cell, p, j, par);
+                    compute_forces_adjacent_cells(p, adj_cells);
+                }
+            }
+        } else { // first and last rows only compute forces between particles
+            for (long long j = 0; j < cell->n_part; j++) {
+                particle_t *p = &par[cell->part_idx[j]];
+                if (p->m != 0) {
+                    compute_forces_between_parts(cell, p, j, par);
+                }
+            }
+        }
+    }
+
+    // second and third loops need to wait for adjacent cells
+    wait_for_center_of_mass(r);
+    loop_per_row(par, cells, n_local_cells - ncside); // last row
+    loop_per_row(par, cells, ncside);                 // first row
+} */

@@ -34,7 +34,25 @@ long long get_dynamic_chunk_size(long long n_part)
     }
 }
 
-void append_particle_index(long long idx, long long cell_idx, particle_t *par, cell_t *cells)
+void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array)
+{
+    long long chunk_size = get_dynamic_chunk_size(idx);
+
+    if (idx == 0) {
+        *p_array = (particle_t *)malloc(chunk_size * sizeof(particle_t));
+    } else if (idx % chunk_size == 0) {
+        *p_array = (particle_t *)realloc(*p_array, (idx + chunk_size) * sizeof(particle_t));
+    }
+    if (!*p_array) {
+        fprintf(stderr, "Memory allocation failed (1)\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // assign particle to the array
+    (*p_array)[idx] = *p;
+}
+
+void append_particle_to_cell(long long idx, long long cell_idx, particle_t *par, cell_t *cells)
 {
     cell_t *cell = &cells[cell_idx];
     long long n_part = cell->n_part;

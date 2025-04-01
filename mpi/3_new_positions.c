@@ -10,6 +10,11 @@
  */
 void particle_distribution(particle_t *par, cell_t *cells)
 {
+    particle_t *parts_to_prev = NULL;
+    particle_t *parts_to_next = NULL;
+    long long n_parts_to_prev = 0;
+    long long n_parts_to_next = 0;
+
     // init / reset cells
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
@@ -23,9 +28,19 @@ void particle_distribution(particle_t *par, cell_t *cells)
         long long cell_idx = get_local_cell_idx(p);
 
         if(cell_in_process_space(cell_idx)) {
-            append_particle_index(i, cell_idx, par, cells);
+            append_particle_to_cell(i, cell_idx, par, cells);
         } else {
+            if (cell_idx < ncside) {
+                append_particle_to_array(n_parts_to_prev, p, &parts_to_prev);
+                n_parts_to_prev++;
+            } else {
+                append_particle_to_array(n_parts_to_next, p, &parts_to_next);
+                n_parts_to_next++;
+            }
+            p->m = 0; // mark particle as outside the process space
         }
+        /* if (i == n_part - 1 && n_parts_to_prev > 0) fprintf(stdout, "Rank %d: %lld particles to prev rank\n", rank, n_parts_to_prev);
+        if (i == n_part - 1 && n_parts_to_next > 0) fprintf(stdout, "Rank %d: %lld particles to next rank\n", rank, n_parts_to_next); */
     }
     //TODO: Send particles that moved to another process(ignore in the first execution)
 }

@@ -33,7 +33,7 @@ double rnd_normal01()
 long long init_particles(long userseed, double side, long ncside, long long n_part, particle_t **first, particle_t **par)
 {
     double (*rnd01)() = rnd_uniform01;
-    long long chunk_size, i, j = 0;
+    long long i, j = 0;
 
     if(userseed < 0) {
         rnd01 = rnd_normal01;
@@ -51,25 +51,13 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
 
         p.m = rnd01() * 0.01 * (ncside * ncside) / n_part / G * EPSILON2;
         long long cell_idx = get_local_cell_idx(&p);
-        if(cell_in_process_space(cell_idx)){
-            chunk_size = get_dynamic_chunk_size(j);
-
-            if (j == 0) {
-                *par = (particle_t *)malloc(chunk_size * sizeof(particle_t));
-            } else if (j % chunk_size == 0) {
-                *par = (particle_t *)realloc(*par, (j + chunk_size) * sizeof(particle_t));
-            }
-            if (!*par) {
-                fprintf(stderr, "Memory allocation failed (1)\n");
-                exit(EXIT_FAILURE);
-            }
-
+        if(cell_in_process_space(cell_idx)) {
+            p.is_particle_0 = (i == 0) ? 1 : 0;
             p.fx = 0;
             p.fy = 0;
-            p.is_particle_0 = (i == 0) ? 1 : 0;
 
-            // assign particle to the array
-            (*par)[j] = p;
+            append_particle_to_array(j, &p, par);
+
             j++;
         }
     }
