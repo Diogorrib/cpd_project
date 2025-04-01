@@ -5,21 +5,12 @@
 MPI_Datatype cell_type;
 MPI_Datatype row_type;
 
-void exchange_boundaries(cell_t *cells) {
+void exchange_boundaries(cell_t *cells)
+{
     MPI_Status status;
 
-    // Neighboring ranks (circular wrap-around)
-    int prev_rank = rank - 1;
-    int next_rank = rank + 1;
-
-    if(prev_rank < 0) {
-        printf("rank %d is the first process, prev_rank set to %d\n", rank, process_count - 1);
-        prev_rank = process_count - 1;
-    }
-    if(next_rank >= process_count-1) {
-        next_rank = 0;
-    }
-
+    int prev_rank = (rank - 1 + process_count) % process_count;
+    int next_rank = (rank + 1) % process_count;
 
     printf("rank %d exchanging boundaries with rank %d and %d\n", rank, prev_rank, next_rank);
 

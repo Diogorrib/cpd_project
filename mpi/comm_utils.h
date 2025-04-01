@@ -12,4 +12,4 @@ void exchange_boundaries(cell_t *cells);
 void create_mpi_row_type();
 void create_mpi_cell_type();
 
-#endif
+#endif // COMM_UTILS_H

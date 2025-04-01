@@ -24,4 +24,4 @@ extern particle_t *particle_0;
 extern int rank, process_count;
 extern long block_low, block_size;//, block_high, block_size;
 
-#endif
+#endif // GLOBALS_H

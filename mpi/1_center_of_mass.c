@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include "comm_utils.h"
 
 /**
  * @brief Compute the center of mass for each cell
@@ -31,7 +32,7 @@ void compute_center_of_mass(particle_t *par, cell_t *cells)
         }
     }
 
-    // exchange_boundaries(cells);
+    exchange_boundaries(cells);
     // TODO: send first (0) and last (block_size-1) rows of center of mass to the adjacent processes
     // TODO: maybe wait for communications to finish
 }

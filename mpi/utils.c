@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "utils.h"
 #include "globals.h"
-
 #include <mpi.h>
 
 void* allocate_memory(size_t n_elements, size_t element_size)
