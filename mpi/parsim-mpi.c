@@ -28,12 +28,17 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atoll(argv[5]);
 }
-long simulation_step(particle_t *par, cell_t *cells)
-{
+long simulation_step(particle_t *par, cell_t *cells, long long time_step)
+{   
+    (void)time_step;
     MPI_Request center_of_mass_requests[4];
+    //fprintf(stdout, "Rank %d - before CM %lld\n", rank, time_step);
     compute_center_of_mass(par, cells, center_of_mass_requests);
+    //fprintf(stdout, "Rank %d - before forces %lld\n", rank, time_step);
     compute_forces(par, cells, center_of_mass_requests);
+    //fprintf(stdout, "Rank %d - before new position %lld\n", rank, time_step);
     compute_new_positions(par, cells);
+    //fprintf(stdout, "Rank %d - before collisions %lld\n", rank, time_step);
     return check_collisions(par, cells);
 }
 void print_result(long long collisions, double exec_time)
@@ -80,7 +85,7 @@ int main(int argc, char *argv[])
 
     particle_distribution(par, cells);
     for (long long t = 0; t < time_steps; t++) {
-        collisions += simulation_step(par, cells);
+        collisions += simulation_step(par, cells, t);
     }
 
     MPI_Allreduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -88,7 +93,7 @@ int main(int argc, char *argv[])
 
     exec_time += omp_get_wtime();
     if(particle_0 != NULL){
-        //print_result(total_collisions, exec_time); 
+        print_result(total_collisions, exec_time);
     }
     cleanup_cells(cells);
     free(cells);

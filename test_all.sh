@@ -11,7 +11,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 mpi_function() {
-    echo "localhost slots=$OMP_NUM_THREADS" > hostfile.txt
+    echo "localhost slots=8" > hostfile.txt
     for input_file in "$TEST_DIR"/*.in; do
         third_arg=$(awk '{print $3}' $input_file)
         if [ "$third_arg" -ge "$OMP_NUM_THREADS" ]; then

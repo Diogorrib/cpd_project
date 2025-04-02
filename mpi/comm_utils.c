@@ -108,6 +108,10 @@ void convert_to_local_array(particle_t *tmp, int count, particle_t **local_par)
     for (int i = 0; i < count; i++) {
         append_particle_to_array(n_part, &tmp[i], local_par);
         n_part++;
+        if (tmp[i].is_particle_0) fprintf(stdout, "Rank %d - PARTICLE_0 MOVED HELP!!!", rank);
+    }
+    if(particle_0 != NULL && (*local_par)[0].is_particle_0) {
+        particle_0 = &(*local_par)[0];
     }
     free(tmp);
 }

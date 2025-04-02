@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include <mpi.h>
 
 /**
  * @brief Compute the center of mass for each cell

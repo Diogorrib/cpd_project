@@ -32,19 +32,16 @@ void particle_distribution(particle_t *par, cell_t *cells)
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cells[cell_idx].n_part = 0;
     }
-
+    
     for (long long i = 0; i < n_part; i++) {
-        MPI_Barrier(MPI_COMM_WORLD);
-        fprintf(stdout, "Rank:%d IN", rank);
+
         particle_t *p = &par[i];
-        fprintf(stdout, "Rank:%d OUT", rank);
-        MPI_Barrier(MPI_COMM_WORLD);
         if (p->m == 0) continue;
 
         long long cell_idx = get_local_cell_idx(p);
 
         if(cell_in_process_space(cell_idx)) {
-            //append_particle_to_cell(i, cell_idx, par, cells);
+            append_particle_to_cell(i, cell_idx, par, cells);
             //fprintf(stdout, "Rank %d, particle in cell %lld (local=%lld) in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
         } else {
             //fprintf(stdout, "Rank %d, OK_+/-: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
@@ -67,6 +64,8 @@ void particle_distribution(particle_t *par, cell_t *cells)
         if (i == n_part - 1 && n_parts_to_next > 0) fprintf(stdout, "Rank %d: %lld particles to next rank\n", rank, n_parts_to_next); */
     }
 
+    long long n_part_old = n_part;
+
     int n_messages = n_parts_to_prev / CHUNK_SIZE + 1 + n_parts_to_next / CHUNK_SIZE + 1;
     MPI_Request *requests = malloc(n_messages * sizeof(MPI_Request));
     if (!requests) {
@@ -74,7 +73,6 @@ void particle_distribution(particle_t *par, cell_t *cells)
         exit(EXIT_FAILURE);
     }
     async_send_part_in_chunks(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, requests);
-
     int next_count = 0, prev_count = 0;
     int to_recv_next = 1, to_recv_prev = 1;
     int count = 0;
@@ -105,10 +103,9 @@ void particle_distribution(particle_t *par, cell_t *cells)
                 }
                 async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2 + 2*count, &prev_req);
             }
-        }
-
+        }  
         if (to_recv_next) convert_to_local_array(tmp_next_old, next_count, &par);
-        if (to_recv_prev) convert_to_local_array(tmp_prev_old, prev_count, &par);
+        if (to_recv_prev) convert_to_local_array(tmp_prev_old, prev_count, &par);       
 
         if (next_count < CHUNK_SIZE) to_recv_next = 0;
         if (prev_count < CHUNK_SIZE) to_recv_prev = 0;
@@ -118,8 +115,7 @@ void particle_distribution(particle_t *par, cell_t *cells)
     wait_for_send_parts(requests, n_messages);
     free(requests);
 
-
-    for (long long i = 0; i < n_part; i++) {
+    for (long long i = n_part_old; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
@@ -129,7 +125,6 @@ void particle_distribution(particle_t *par, cell_t *cells)
             fprintf(stdout, "Rank %d, Error: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
             exit(EXIT_FAILURE);
         }
-        
 
         append_particle_to_cell(i, cell_idx, par, cells);
     }
