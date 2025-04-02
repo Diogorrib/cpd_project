@@ -67,6 +67,7 @@ void append_particle_to_cell(long long idx, long long cell_idx, particle_t *par,
         part_idx = (long long *)malloc(chunk_size * sizeof(long long));
     } else if (n_part % chunk_size == 0) {
         part_idx = (long long *)realloc(part_idx, (n_part + chunk_size) * sizeof(long long));
+        //fprintf(stderr, "Rank %d reallocating cell %lld, n_part = %lld\n", rank, cell_idx, n_part);
     }
     if (!part_idx) {
         fprintf(stderr, "Memory allocation failed (3) %lld\n", cell_idx);

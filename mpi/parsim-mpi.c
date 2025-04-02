@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     exec_time += omp_get_wtime();
     if(particle_0 != NULL){
-        print_result(total_collisions, exec_time); 
+        //print_result(total_collisions, exec_time); 
     }
     cleanup_cells(cells);
     free(cells);

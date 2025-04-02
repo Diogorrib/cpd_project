@@ -59,6 +59,12 @@ void async_send_part_in_chunks(particle_t *prev, particle_t *next, long long n_p
     int n_messages_prev = n_prev / CHUNK_SIZE + 1;
     int n_messages_next = n_next / CHUNK_SIZE + 1;
 
+    /* MPI_Barrier(MPI_COMM_WORLD);
+    fprintf(stdout, "Rank %d sending %lld elements rank %d\n", rank, n_prev, prev_rank);
+    MPI_Barrier(MPI_COMM_WORLD);
+    fprintf(stdout, "Rank %d sending %lld elements rank %d\n", rank, n_next, next_rank);
+    MPI_Barrier(MPI_COMM_WORLD); */
+
     // Send particles to previous rank
     for (int i = 0; i < n_messages_prev; i++) {
         long long size = (i == n_messages_prev - 1) ? n_prev % CHUNK_SIZE : CHUNK_SIZE; // last iteration is smaller
@@ -84,6 +90,10 @@ int wait_and_get_count(MPI_Request *request) {
     MPI_Wait(request, &status);
 
     MPI_Get_count(&status, part_type, &count);
+
+    /* MPI_Barrier(MPI_COMM_WORLD);
+    fprintf(stdout, "Rank %d received %d elements rank %d (tag %d)\n", rank, count, status.MPI_SOURCE, status.MPI_TAG);
+    MPI_Barrier(MPI_COMM_WORLD); */
 
     return count;  
 }

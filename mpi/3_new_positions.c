@@ -34,14 +34,26 @@ void particle_distribution(particle_t *par, cell_t *cells)
     }
 
     for (long long i = 0; i < n_part; i++) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        fprintf(stdout, "Rank:%d IN", rank);
         particle_t *p = &par[i];
+        fprintf(stdout, "Rank:%d OUT", rank);
+        MPI_Barrier(MPI_COMM_WORLD);
         if (p->m == 0) continue;
 
         long long cell_idx = get_local_cell_idx(p);
 
         if(cell_in_process_space(cell_idx)) {
-            append_particle_to_cell(i, cell_idx, par, cells);
+            //append_particle_to_cell(i, cell_idx, par, cells);
+            //fprintf(stdout, "Rank %d, particle in cell %lld (local=%lld) in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
         } else {
+            //fprintf(stdout, "Rank %d, OK_+/-: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
+            if (rank == 0 && cell_idx >= (block_size+2) * ncside) {
+                cell_idx = 0;
+            } else if (rank == process_count - 1 && cell_idx < 0) {
+                cell_idx = ncside;
+            }
+
             if (cell_idx < ncside) {
                 append_particle_to_array(n_parts_to_prev, p, &parts_to_prev);
                 n_parts_to_prev++;
@@ -82,7 +94,7 @@ void particle_distribution(particle_t *par, cell_t *cells)
             }
         }
 
-        if (to_recv_prev) { 
+        if (to_recv_prev) {
             prev_count = wait_and_get_count(&prev_req);
             tmp_prev_old = tmp_prev;
             if (prev_count >= CHUNK_SIZE) {
@@ -105,6 +117,22 @@ void particle_distribution(particle_t *par, cell_t *cells)
 
     wait_for_send_parts(requests, n_messages);
     free(requests);
+
+
+    for (long long i = 0; i < n_part; i++) {
+        particle_t *p = &par[i];
+        if (p->m == 0) continue;
+
+        long long cell_idx = get_local_cell_idx(p);
+
+        if (!cell_in_process_space(cell_idx)) {
+            fprintf(stdout, "Rank %d, Error: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
+            exit(EXIT_FAILURE);
+        }
+        
+
+        append_particle_to_cell(i, cell_idx, par, cells);
+    }
 }
 
 void check_outside_space(particle_t *p)
