@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
     initial_particle_distribution(par, cells);
     for (long long t = 0; t < time_steps; t++) {
         collisions += simulation_step(par, cells, t);
+        fprintf(stdout, "Rank %d - after step %lld\n", rank, t);
     }
 
     MPI_Allreduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);

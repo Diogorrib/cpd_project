@@ -33,27 +33,18 @@ void distribute_local_parts_and_save_to_exchange(particle_t *par, cell_t *cells,
 
         long long cell_idx = get_local_cell_idx(p);
 
-        MPI_Barrier(MPI_COMM_WORLD);
-        fprintf(stdout, "Rank %d - particle %lld in cell %lld (local=%lld)\n", rank, i, get_global_cell_idx(p), cell_idx);
-        MPI_Barrier(MPI_COMM_WORLD);
-
         if(cell_in_process_space(cell_idx)) {
             append_particle_to_cell(i, cell_idx, par, cells, 5);
-            fprintf(stdout, "Rank %d - particle %lld appended to local cell %lld\n", rank, i, cell_idx);
         } else {
             if (is_prev_process(cell_idx)) {
                 append_particle_to_array(*n_prev, p, prev, 6);
-                n_prev++;
-                fprintf(stdout, "Rank %d - particle %lld appended to prev cell %lld\n", rank, i, cell_idx);
+                (*n_prev)++;
             } else {
                 append_particle_to_array(*n_next, p, next, 7);
-                n_next++;
-                fprintf(stdout, "Rank %d - particle %lld appended to next cell %lld\n", rank, i, cell_idx);
+                (*n_next)++;
             }
             p->m = 0; // mark particle as outside the process space
         }
-
-        MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 
@@ -153,26 +144,18 @@ void particle_redistribution(particle_t *par, cell_t *cells)
     // reset cells
     reset_cell_n_parts(cells);
 
-    fprintf(stdout, "Rank %d - before 1st distribution\n", rank);
-
     // distribute per cell the particles that are kept in process space
     distribute_local_parts_and_save_to_exchange(par, cells, &parts_to_prev, &parts_to_next, &n_parts_to_prev, &n_parts_to_next);
 
     // save current number to distribute received particles
     long long n_part_old = n_part;
 
-    fprintf(stdout, "Rank %d - after distribution\n", rank);
-
     // start sending & wait to receive all particles
     n_messages = exchange_particles(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, &requests,
         tmp_prev, tmp_next, &prev_req, &next_req, &par);
 
-    fprintf(stdout, "Rank %d - after exchange\n", rank);
-
     // distribute per cell the received particles
     distribute_received_parts(par, cells, n_part_old);
-
-    fprintf(stdout, "Rank %d - after 2nd distribution\n", rank);
 
     wait_for_send_parts(requests, n_messages);
     free(requests);
