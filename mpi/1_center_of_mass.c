@@ -4,8 +4,9 @@
 /**
  * @brief Compute the center of mass for each cell
  *
- * @param par array of particles
- * @param cells array of cells
+ * @param par array of local particles
+ * @param cells array of local cells accounting for 2 adjacents rows
+ * @param r array of MPI requests to start receiving and to start sending
  */
 void compute_center_of_mass(particle_t *par, cell_t *cells, MPI_Request *r)
 {

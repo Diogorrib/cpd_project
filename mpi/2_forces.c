@@ -1,6 +1,40 @@
 #include <math.h>
 #include "simulation.h"
 
+/**
+ * @brief Get correct x index & correct x distance (wrap around)
+ */
+double fix_x_position_wrap_around(long *x)
+{
+    double dx = 0;
+    if (*x < 0) {
+        *x = ncside - 1;
+        dx = -side;
+    } else if (*x >= ncside) {
+        *x = 0;
+        dx = side;
+    }
+    return dx;
+}
+
+/**
+ * @brief Get correct y distance (wrap around)
+ */
+double fix_y_position_wrap_around(long y)
+{
+    double dy = 0;
+    if (rank == 0 && y == 0) {
+        dy = -side;
+    } else if (rank == process_count - 1 && y == block_size + 1) {
+        dy = side;
+    }
+    return dy;
+}
+
+/**
+ * @brief Get the center of mass of the adjacent cells,
+ * with fixed wrap around for x and y positions
+ */
 void get_adj_indexes(long long cell_idx, cell_t *cells, center_of_mass_t *adj_cells)
 {
     long x = cell_idx % ncside;
@@ -18,26 +52,10 @@ void get_adj_indexes(long long cell_idx, cell_t *cells, center_of_mass_t *adj_ce
     };
 
     for (int i = 0; i < ADJ_CELLS; i++) {
-        double dx = 0;
-        double dy = 0;
-
-        // get correct x index and correct x distance (wrap around)
-        if (adj[i][0] < 0) {
-            adj[i][0] = ncside - 1;
-            dx = -side;
-        } else if (adj[i][0] >= ncside) {
-            adj[i][0] = 0;
-            dx = side;
-        }
-
-        // get correct y distance (wrap around)
-        if (rank == 0 && adj[i][1] == 0) {
-            dy = -side;
-        } else if (rank == process_count - 1 && adj[i][1] == block_size + 1) {
-            dy = side;
-        }
-
+        double dx = fix_x_position_wrap_around(&adj[i][0]);
+        double dy = fix_y_position_wrap_around(adj[i][1]);
         long long index = adj[i][0] + adj[i][1] * ncside;
+
         // fix wrap around
         cell_t *cell = &cells[index];
         center_of_mass_t *adj_cell = &adj_cells[i];
@@ -112,14 +130,15 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
 }
 
 /**
- * @brief Compute the forces for each particle and update the acceleration
+ * @brief Compute the forces for each particle
  *
- * @param par array of particles
- * @param cells array of cells
+ * @param par array of local particles
+ * @param cells array of local cells accounting for 2 adjacents rows
+ * @param r array of MPI requests to wait to receive and to send
  */
 void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
 {
-    wait_for_center_of_mass(r);
+    wait_for_center_of_mass(r); // FIXME - can be improved
 
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
@@ -128,6 +147,7 @@ void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
 
         center_of_mass_t adj_cells[ADJ_CELLS];
         get_adj_indexes(cell_idx, cells, adj_cells);
+
         for (long long j = 0; j < cell->n_part; j++) {
             particle_t *p = &par[cell->part_idx[j]];
             if (p->m != 0) {

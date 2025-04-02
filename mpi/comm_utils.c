@@ -106,7 +106,7 @@ void wait_for_send_parts(MPI_Request *requests, int count)
 void convert_to_local_array(particle_t *tmp, int count, particle_t **local_par)
 {
     for (int i = 0; i < count; i++) {
-        append_particle_to_array(n_part, &tmp[i], local_par);
+        append_particle_to_array(n_part, &tmp[i], local_par, 12);
         n_part++;
         if (tmp[i].is_particle_0) fprintf(stdout, "Rank %d - PARTICLE_0 MOVED HELP!!!", rank);
     }

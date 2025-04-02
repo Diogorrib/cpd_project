@@ -54,7 +54,7 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
         if(cell_in_process_space(cell_idx)) {
             p.is_particle_0 = (i == 0) ? 1 : 0;
 
-            append_particle_to_array(j, &p, par);
+            append_particle_to_array(j, &p, par, 0);
 
             j++;
         }

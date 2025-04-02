@@ -3,11 +3,14 @@
 #include "globals.h"
 #include <mpi.h>
 
-void* allocate_memory(size_t n_elements, size_t element_size)
+/**
+ * @brief Utility to allocate memory and check failure
+ */
+void* allocate_memory(size_t n_elements, size_t element_size, int debug_tag)
 {
-    void *array = calloc(n_elements, element_size);
+    void *array = malloc(n_elements * element_size);
     if (!array) {
-        fprintf(stderr, "Memory allocation failed (2)\n");
+        fprintf(stderr, "Memory allocation failed (%d)\n", debug_tag);
         exit(EXIT_FAILURE);
     }
     return array;
@@ -34,7 +37,7 @@ long long get_dynamic_chunk_size(long long n_part)
     }
 }
 
-void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array)
+void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array, int debug_tag)
 {
     long long chunk_size = get_dynamic_chunk_size(idx);
 
@@ -44,7 +47,7 @@ void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array
         *p_array = (particle_t *)realloc(*p_array, (idx + chunk_size) * sizeof(particle_t));
     }
     if (!*p_array) {
-        fprintf(stderr, "Memory allocation failed (1)\n");
+        fprintf(stderr, "Memory allocation failed (%d)\n", debug_tag);
         exit(EXIT_FAILURE);
     }
 
@@ -56,7 +59,7 @@ void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array
     (*p_array)[idx] = *p;
 }
 
-void append_particle_to_cell(long long idx, long long cell_idx, particle_t *par, cell_t *cells)
+void append_particle_to_cell(long long idx, long long cell_idx, particle_t *par, cell_t *cells, int debug_tag)
 {
     cell_t *cell = &cells[cell_idx];
     long long n_part = cell->n_part;
@@ -70,7 +73,7 @@ void append_particle_to_cell(long long idx, long long cell_idx, particle_t *par,
         //fprintf(stderr, "Rank %d reallocating cell %lld, n_part = %lld\n", rank, cell_idx, n_part);
     }
     if (!part_idx) {
-        fprintf(stderr, "Memory allocation failed (3) %lld\n", cell_idx);
+        fprintf(stderr, "Memory allocation failed (%d) %lld\n", debug_tag, cell_idx);
         exit(EXIT_FAILURE);
     }
 

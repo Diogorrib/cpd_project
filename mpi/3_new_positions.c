@@ -1,120 +1,64 @@
 #include "simulation.h"
 #include <stdio.h>
 
-/**
- * @brief Distributes particles into cells based on their positions,
- * excluding particles that have collided (mass = 0)
- *
- * @param par array of particles
- * @param cells array of cells
- */
-void particle_distribution(particle_t *par, cell_t *cells)
+void reset_cell_n_parts(cell_t *cells)
 {
-    particle_t *parts_to_prev = NULL;
-    particle_t *parts_to_next = NULL;
-    long long n_parts_to_prev = 0;
-    long long n_parts_to_next = 0;
-
-    MPI_Request prev_req;
-    MPI_Request next_req;
-
-    particle_t *tmp_prev = malloc(CHUNK_SIZE * sizeof(particle_t));
-    particle_t *tmp_next = malloc(CHUNK_SIZE * sizeof(particle_t));
-    if (!tmp_prev || !tmp_next) {
-        fprintf(stderr, "Rank %d, Memory allocation failed (10)", rank);
-        exit(EXIT_FAILURE);
-    }
-    async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1, &next_req);
-    async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2, &prev_req);
-
-    // init / reset cells
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cells[cell_idx].n_part = 0;
     }
-    
-    for (long long i = 0; i < n_part; i++) {
+}
 
+/**
+ * @brief Check if the cell index is from the previous process space
+ * 
+ * @return true if the cell index is from the previous process space,
+ * false if it is from the next process space
+ */
+int is_prev_process(long long cell_idx)
+{
+    if (rank == 0 && cell_idx >= (block_size+2) * ncside) return 1; // a lot bigger so it is the last process (previous one with wrap around)
+    if (rank == process_count - 1 && cell_idx < 0) return 0; // a lot smaller so it is the first process (next one with wrap around)
+    return cell_idx < ncside;
+}
+
+/**
+ * @brief Ditribute local particles to the process cells and get particles to send to adjacent processes
+ */
+void distribute_local_parts_and_save_to_exchange(particle_t *par, cell_t *cells, particle_t **prev, particle_t **next, long long *n_prev, long long *n_next)
+{
+    for (long long i = 0; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
 
         long long cell_idx = get_local_cell_idx(p);
 
-        if(cell_in_process_space(cell_idx)) {
-            append_particle_to_cell(i, cell_idx, par, cells);
-            //fprintf(stdout, "Rank %d, particle in cell %lld (local=%lld) in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
-        } else {
-            //fprintf(stdout, "Rank %d, OK_+/-: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
-            if (rank == 0 && cell_idx >= (block_size+2) * ncside) {
-                cell_idx = 0;
-            } else if (rank == process_count - 1 && cell_idx < 0) {
-                cell_idx = ncside;
-            }
+        MPI_Barrier(MPI_COMM_WORLD);
+        fprintf(stdout, "Rank %d - particle %lld in cell %lld (local=%lld)\n", rank, i, get_global_cell_idx(p), cell_idx);
+        MPI_Barrier(MPI_COMM_WORLD);
 
-            if (cell_idx < ncside) {
-                append_particle_to_array(n_parts_to_prev, p, &parts_to_prev);
-                n_parts_to_prev++;
+        if(cell_in_process_space(cell_idx)) {
+            append_particle_to_cell(i, cell_idx, par, cells, 5);
+            fprintf(stdout, "Rank %d - particle %lld appended to local cell %lld\n", rank, i, cell_idx);
+        } else {
+            if (is_prev_process(cell_idx)) {
+                append_particle_to_array(*n_prev, p, prev, 6);
+                n_prev++;
+                fprintf(stdout, "Rank %d - particle %lld appended to prev cell %lld\n", rank, i, cell_idx);
             } else {
-                append_particle_to_array(n_parts_to_next, p, &parts_to_next);
-                n_parts_to_next++;
+                append_particle_to_array(*n_next, p, next, 7);
+                n_next++;
+                fprintf(stdout, "Rank %d - particle %lld appended to next cell %lld\n", rank, i, cell_idx);
             }
             p->m = 0; // mark particle as outside the process space
         }
-        /* if (i == n_part - 1 && n_parts_to_prev > 0) fprintf(stdout, "Rank %d: %lld particles to prev rank\n", rank, n_parts_to_prev);
-        if (i == n_part - 1 && n_parts_to_next > 0) fprintf(stdout, "Rank %d: %lld particles to next rank\n", rank, n_parts_to_next); */
+
+        MPI_Barrier(MPI_COMM_WORLD);
     }
+}
 
-    long long n_part_old = n_part;
-
-    int n_messages = n_parts_to_prev / CHUNK_SIZE + 1 + n_parts_to_next / CHUNK_SIZE + 1;
-    MPI_Request *requests = malloc(n_messages * sizeof(MPI_Request));
-    if (!requests) {
-        fprintf(stderr, "Rank %d, Memory allocation failed (11)", rank);
-        exit(EXIT_FAILURE);
-    }
-    async_send_part_in_chunks(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, requests);
-    int next_count = 0, prev_count = 0;
-    int to_recv_next = 1, to_recv_prev = 1;
-    int count = 0;
-    particle_t *tmp_prev_old = NULL;
-    particle_t *tmp_next_old = NULL;
-    while (to_recv_next || to_recv_prev) {
-        if (to_recv_next) {
-            next_count = wait_and_get_count(&next_req);
-            tmp_next_old = tmp_next;
-            if (next_count >= CHUNK_SIZE) {
-                tmp_next = malloc(CHUNK_SIZE * sizeof(particle_t));
-                if (!tmp_next) {
-                    fprintf(stderr, "Rank %d, Memory allocation failed (12)", rank);
-                    exit(EXIT_FAILURE);
-                }
-                async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1 + 2*count, &next_req);
-            }
-        }
-
-        if (to_recv_prev) {
-            prev_count = wait_and_get_count(&prev_req);
-            tmp_prev_old = tmp_prev;
-            if (prev_count >= CHUNK_SIZE) {
-                tmp_prev = malloc(CHUNK_SIZE * sizeof(particle_t));
-                if (!tmp_next) {
-                    fprintf(stderr, "Rank %d, Memory allocation failed (13)", rank);
-                    exit(EXIT_FAILURE);
-                }
-                async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2 + 2*count, &prev_req);
-            }
-        }  
-        if (to_recv_next) convert_to_local_array(tmp_next_old, next_count, &par);
-        if (to_recv_prev) convert_to_local_array(tmp_prev_old, prev_count, &par);       
-
-        if (next_count < CHUNK_SIZE) to_recv_next = 0;
-        if (prev_count < CHUNK_SIZE) to_recv_prev = 0;
-        count++;
-    }
-
-    wait_for_send_parts(requests, n_messages);
-    free(requests);
-
+void distribute_received_parts(particle_t *par, cell_t *cells, long long n_part_old)
+{
     for (long long i = n_part_old; i < n_part; i++) {
         particle_t *p = &par[i];
         if (p->m == 0) continue;
@@ -126,7 +70,126 @@ void particle_distribution(particle_t *par, cell_t *cells)
             exit(EXIT_FAILURE);
         }
 
-        append_particle_to_cell(i, cell_idx, par, cells);
+        append_particle_to_cell(i, cell_idx, par, cells, 11);
+    }
+}
+
+void receive_chuncks_in_loop(particle_t *tmp_prev, particle_t *tmp_next, MPI_Request *prev_req, MPI_Request *next_req, particle_t **local_parts)
+{
+    int next_count = 0, prev_count = 0;
+    int to_recv_next = 1, to_recv_prev = 1;
+    int count = 0;
+    particle_t *tmp_prev_old = NULL;
+    particle_t *tmp_next_old = NULL;
+    while (to_recv_next || to_recv_prev) {
+        
+        // get count to save received particles and start receiving next chunk async while saving current chunk
+        if (to_recv_next) {
+            next_count = wait_and_get_count(next_req);
+            tmp_next_old = tmp_next; // save current chunk reference
+            if (next_count >= CHUNK_SIZE) {
+                tmp_next = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 9); // allocate next chunk
+                async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1 + 2*count, next_req);
+            }
+        }
+
+        // get count to save received particles and start receiving next chunk async while saving current chunk
+        if (to_recv_prev) {
+            prev_count = wait_and_get_count(prev_req);
+            tmp_prev_old = tmp_prev; // save current chunk reference
+            if (prev_count >= CHUNK_SIZE) {
+                tmp_prev = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 10); // allocate next chunk
+                async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2 + 2*count, prev_req);
+            }
+        }
+
+        // save received particles to local array and free tmp array
+        if (to_recv_next) convert_to_local_array(tmp_next_old, next_count, local_parts);
+        if (to_recv_prev) convert_to_local_array(tmp_prev_old, prev_count, local_parts);
+
+        // last message is smaller than CHUNK_SIZE, others are CHUNK_SIZE
+        if (next_count < CHUNK_SIZE) to_recv_next = 0;
+        if (prev_count < CHUNK_SIZE) to_recv_prev = 0;
+        count++;
+    }
+}
+
+int exchange_particles(particle_t *prev, particle_t *next, long long n_prev, long long n_next, MPI_Request **requests,
+    particle_t *tmp_prev, particle_t *tmp_next, MPI_Request *prev_req, MPI_Request *next_req, particle_t **local_parts)
+{
+    int n_messages_prev = n_prev / CHUNK_SIZE + 1;
+    int n_messages_next = n_next / CHUNK_SIZE + 1;
+    int n_messages = n_messages_prev + n_messages_next;
+
+    *requests = (MPI_Request *)allocate_memory(n_messages, sizeof(MPI_Request), 8);
+    async_send_part_in_chunks(prev, next, n_prev, n_next, *requests);
+
+    receive_chuncks_in_loop(tmp_prev, tmp_next, prev_req, next_req, local_parts);
+    return n_messages;
+}
+
+/**
+ * @brief Re-distributes particles into cells based on their positions,
+ * excluding particles that have collided or outside process space (mass = 0)
+ *
+ * @param par array of local particles (that will be updated with exchanged particles)
+ * @param cells array of local cells accounting for 2 adjacents rows (that will be updated according to the new positions)
+ */
+void particle_redistribution(particle_t *par, cell_t *cells)
+{
+    MPI_Request prev_req, next_req;
+    MPI_Request *requests;
+    particle_t *parts_to_prev = NULL;
+    particle_t *parts_to_next = NULL;
+    long long n_parts_to_prev = 0;
+    long long n_parts_to_next = 0;
+    int n_messages;
+
+    particle_t *tmp_prev = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 3);
+    particle_t *tmp_next = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 4);
+    async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1, &next_req);
+    async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2, &prev_req);
+
+    // reset cells
+    reset_cell_n_parts(cells);
+
+    fprintf(stdout, "Rank %d - before 1st distribution\n", rank);
+
+    // distribute per cell the particles that are kept in process space
+    distribute_local_parts_and_save_to_exchange(par, cells, &parts_to_prev, &parts_to_next, &n_parts_to_prev, &n_parts_to_next);
+
+    // save current number to distribute received particles
+    long long n_part_old = n_part;
+
+    fprintf(stdout, "Rank %d - after distribution\n", rank);
+
+    // start sending & wait to receive all particles
+    n_messages = exchange_particles(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, &requests,
+        tmp_prev, tmp_next, &prev_req, &next_req, &par);
+
+    fprintf(stdout, "Rank %d - after exchange\n", rank);
+
+    // distribute per cell the received particles
+    distribute_received_parts(par, cells, n_part_old);
+
+    fprintf(stdout, "Rank %d - after 2nd distribution\n", rank);
+
+    wait_for_send_parts(requests, n_messages);
+    free(requests);
+}
+
+void initial_particle_distribution(particle_t *par, cell_t *cells)
+{
+    // init cells
+    reset_cell_n_parts(cells);
+
+    for (long long i = 0; i < n_part; i++) {
+        particle_t *p = &par[i];
+        if (p->m == 0) continue;
+
+        // here particles should be in process space
+        long long cell_idx = get_local_cell_idx(p);
+        append_particle_to_cell(i, cell_idx, par, cells, 2);
     }
 }
 
@@ -173,5 +236,5 @@ void compute_new_positions(particle_t *par, cell_t *cells)
         p->fy = 0;
     }
     cleanup_cells(cells);
-    particle_distribution(par, cells);
+    particle_redistribution(par, cells);
 }
