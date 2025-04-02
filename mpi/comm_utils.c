@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include "comm_utils.h"
+#include "utils.h"
 #include "globals.h"
 
 #define TAG_CM_1 0 // Tag to send center of mass to previous (the previous receives from next); i.e. send first row and receive ghost row at the end
 #define TAG_CM_2 1 // Tag to send center of mass to next (the next receives from previous); i.e. send last row and receive ghost row at the beginning
-#define BASE_TAG_1 2 // Base tag to send particles (it cannot be the same because there could be multiple chunks)
-#define BASE_TAG_2 3 // Base tag to send particles (it cannot be the same because there could be multiple chunks)
-#define CHUNK_SIZE  500 // Size of the chunks to send
 
 MPI_Datatype cell_type;
+MPI_Datatype part_type;
 MPI_Datatype row_type;
 
 /**
@@ -63,14 +62,44 @@ void async_send_part_in_chunks(particle_t *prev, particle_t *next, long long n_p
     // Send particles to previous rank
     for (int i = 0; i < n_messages_prev; i++) {
         long long size = (i == n_messages_prev - 1) ? n_prev % CHUNK_SIZE : CHUNK_SIZE; // last iteration is smaller
-        MPI_Isend(&prev[i * CHUNK_SIZE], size, MPI_DOUBLE, prev_rank, BASE_TAG_1 + 2*i, MPI_COMM_WORLD, &requests[2*i]);
+        MPI_Isend(&prev[i * CHUNK_SIZE], size, part_type, prev_rank, BASE_TAG_1 + 2*i, MPI_COMM_WORLD, &requests[i]);
     }
 
     // Send particles to next rank
     for (int i = 0; i < n_messages_next; i++) {
         long long size = (i == n_messages_next - 1) ? n_next % CHUNK_SIZE : CHUNK_SIZE; // last iteration is smaller
-        MPI_Isend(&next[i * CHUNK_SIZE], size, MPI_DOUBLE, next_rank, BASE_TAG_2 + 2*i, MPI_COMM_WORLD, &requests[2*i + 1]);
+        MPI_Isend(&next[i * CHUNK_SIZE], size, part_type, next_rank, BASE_TAG_2 + 2*i, MPI_COMM_WORLD, &requests[n_messages_prev + i]);
     }
+}
+
+void async_recv_part_in_chunks(particle_t *tmp, int rank, int tag, MPI_Request *request)
+{
+    MPI_Irecv(tmp, CHUNK_SIZE, part_type, rank, tag, MPI_COMM_WORLD, request);
+}
+
+int wait_and_get_count(MPI_Request *request) {
+    MPI_Status status;
+    int count;
+
+    MPI_Wait(request, &status);
+
+    MPI_Get_count(&status, part_type, &count);
+
+    return count;  
+}
+
+void wait_for_send_parts(MPI_Request *requests, int count)
+{
+    MPI_Waitall(count, requests, MPI_STATUSES_IGNORE);
+}
+
+void convert_to_local_array(particle_t *tmp, int count, particle_t **local_par)
+{
+    for (int i = 0; i < count; i++) {
+        append_particle_to_array(n_part, &tmp[i], local_par);
+        n_part++;
+    }
+    free(tmp);
 }
 
 /**
@@ -93,6 +122,24 @@ void create_mpi_types_for_cms()
     // Create a row type to send a full row of cells
     MPI_Type_contiguous(ncside, cell_type, &row_type);
     MPI_Type_commit(&row_type);
+}
+
+void create_mpi_particle_type()
+{
+    int block_lengths[6] = {1, 1, 1, 1, 1, 1};  // Each field is 1 value
+    MPI_Aint displacements[6];         // Memory offsets
+    MPI_Datatype types[6] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_CHAR};  // Data types
+    
+    displacements[0] = offsetof(particle_t, x);
+    displacements[1] = offsetof(particle_t, y);
+    displacements[2] = offsetof(particle_t, vx);
+    displacements[3] = offsetof(particle_t, vy);
+    displacements[4] = offsetof(particle_t, m);
+    displacements[5] = offsetof(particle_t, is_particle_0);
+
+    // Create the structured datatype
+    MPI_Type_create_struct(6, block_lengths, displacements, types, &part_type);
+    MPI_Type_commit(&part_type);
 }
 
 void debug_cms(MPI_Status *status, cell_t *cells)

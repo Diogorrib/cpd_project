@@ -15,6 +15,18 @@ void particle_distribution(particle_t *par, cell_t *cells)
     long long n_parts_to_prev = 0;
     long long n_parts_to_next = 0;
 
+    MPI_Request prev_req;
+    MPI_Request next_req;
+
+    particle_t *tmp_prev = malloc(CHUNK_SIZE * sizeof(particle_t));
+    particle_t *tmp_next = malloc(CHUNK_SIZE * sizeof(particle_t));
+    if (!tmp_prev || !tmp_next) {
+        fprintf(stderr, "Rank %d, Memory allocation failed (10)", rank);
+        exit(EXIT_FAILURE);
+    }
+    async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1, &next_req);
+    async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2, &prev_req);
+
     // init / reset cells
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
@@ -42,7 +54,57 @@ void particle_distribution(particle_t *par, cell_t *cells)
         /* if (i == n_part - 1 && n_parts_to_prev > 0) fprintf(stdout, "Rank %d: %lld particles to prev rank\n", rank, n_parts_to_prev);
         if (i == n_part - 1 && n_parts_to_next > 0) fprintf(stdout, "Rank %d: %lld particles to next rank\n", rank, n_parts_to_next); */
     }
-    //TODO: Send particles that moved to another process(ignore in the first execution)
+
+    int n_messages = n_parts_to_prev / CHUNK_SIZE + 1 + n_parts_to_next / CHUNK_SIZE + 1;
+    MPI_Request *requests = malloc(n_messages * sizeof(MPI_Request));
+    if (!requests) {
+        fprintf(stderr, "Rank %d, Memory allocation failed (11)", rank);
+        exit(EXIT_FAILURE);
+    }
+    async_send_part_in_chunks(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, requests);
+
+    int next_count = 0, prev_count = 0;
+    int to_recv_next = 1, to_recv_prev = 1;
+    int count = 0;
+    particle_t *tmp_prev_old = NULL;
+    particle_t *tmp_next_old = NULL;
+    while (to_recv_next || to_recv_prev) {
+        if (to_recv_next) {
+            next_count = wait_and_get_count(&next_req);
+            tmp_next_old = tmp_next;
+            if (next_count >= CHUNK_SIZE) {
+                tmp_next = malloc(CHUNK_SIZE * sizeof(particle_t));
+                if (!tmp_next) {
+                    fprintf(stderr, "Rank %d, Memory allocation failed (12)", rank);
+                    exit(EXIT_FAILURE);
+                }
+                async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1 + 2*count, &next_req);
+            }
+        }
+
+        if (to_recv_prev) { 
+            prev_count = wait_and_get_count(&prev_req);
+            tmp_prev_old = tmp_prev;
+            if (prev_count >= CHUNK_SIZE) {
+                tmp_prev = malloc(CHUNK_SIZE * sizeof(particle_t));
+                if (!tmp_next) {
+                    fprintf(stderr, "Rank %d, Memory allocation failed (13)", rank);
+                    exit(EXIT_FAILURE);
+                }
+                async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2 + 2*count, &prev_req);
+            }
+        }
+
+        if (to_recv_next) convert_to_local_array(tmp_next_old, next_count, &par);
+        if (to_recv_prev) convert_to_local_array(tmp_prev_old, prev_count, &par);
+
+        if (next_count < CHUNK_SIZE) to_recv_next = 0;
+        if (prev_count < CHUNK_SIZE) to_recv_prev = 0;
+        count++;
+    }
+
+    wait_for_send_parts(requests, n_messages);
+    free(requests);
 }
 
 void check_outside_space(particle_t *p)

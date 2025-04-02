@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
 
     // Define mpi types - need to be after MPI_Init and args
     create_mpi_types_for_cms();
+    create_mpi_particle_type();
 
     prev_rank = (rank - 1 + process_count) % process_count;
     next_rank = (rank + 1) % process_count;

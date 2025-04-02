@@ -53,8 +53,6 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
         long long cell_idx = get_local_cell_idx(&p);
         if(cell_in_process_space(cell_idx)) {
             p.is_particle_0 = (i == 0) ? 1 : 0;
-            p.fx = 0;
-            p.fy = 0;
 
             append_particle_to_array(j, &p, par);
 

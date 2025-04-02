@@ -48,6 +48,10 @@ void append_particle_to_array(long long idx, particle_t *p, particle_t **p_array
         exit(EXIT_FAILURE);
     }
 
+    // useful for init & receiving
+    p->fx = 0;
+    p->fy = 0;
+
     // assign particle to the array
     (*p_array)[idx] = *p;
 }
