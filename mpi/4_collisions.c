@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include <stdio.h>
 
 long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
 {
@@ -6,6 +7,7 @@ long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
     particle_t *p1 = &par[cell->part_idx[j]];
     for (long long i = j + 1; i < cell->n_part; i++) {
         particle_t *p2 = &par[cell->part_idx[i]];
+
         double dx = p1->x - p2->x;
         double dy = p1->y - p2->y;
         double dist_sq = dx * dx + dy * dy;
@@ -34,6 +36,7 @@ long check_collisions(particle_t *par, cell_t *cells)
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cell_t *cell = &cells[cell_idx];
+
         for (long long j = 0; j < cell->n_part; j++) {
             collisions += check_collisions_for_part(cell, j, par);
         }

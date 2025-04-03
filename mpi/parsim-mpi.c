@@ -28,18 +28,18 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *n_part = atoll(argv[4]);
     *time_steps = atoll(argv[5]);
 }
-long simulation_step(particle_t *par, cell_t *cells, long long time_step)
+long simulation_step(particle_t **par, cell_t *cells, long long time_step)
 {   
     (void)time_step;
     MPI_Request center_of_mass_requests[4];
-    fprintf(stdout, "Rank %d - before CM %lld\n", rank, time_step);
-    compute_center_of_mass(par, cells, center_of_mass_requests);
-    fprintf(stdout, "Rank %d - before forces %lld\n", rank, time_step);
-    compute_forces(par, cells, center_of_mass_requests);
-    fprintf(stdout, "Rank %d - before new position %lld\n", rank, time_step);
+    //fprintf(stdout, "Rank %d - before CM %lld\n", rank, time_step);
+    compute_center_of_mass(*par, cells, center_of_mass_requests);
+    //fprintf(stdout, "Rank %d - before forces %lld\n", rank, time_step);
+    compute_forces(*par, cells, center_of_mass_requests);
+    //fprintf(stdout, "Rank %d - before new position %lld\n", rank, time_step);
     compute_new_positions(par, cells);
-    fprintf(stdout, "Rank %d - before collisions %lld\n", rank, time_step);
-    return check_collisions(par, cells);
+    //fprintf(stdout, "Rank %d - before collisions %lld\n", rank, time_step);
+    return check_collisions(*par, cells);
 }
 void print_result(long long collisions, double exec_time)
 {
@@ -66,15 +66,12 @@ int main(int argc, char *argv[])
     n_local_cells = ncside * block_size;
     inv_cell_side = ncside / side;
 
-    // Define mpi types - need to be after MPI_Init and args
-    create_mpi_types_for_cms();
-    create_mpi_particle_type();
-
     prev_rank = (rank - 1 + process_count) % process_count;
     next_rank = (rank + 1) % process_count;
 
-    /* fprintf(stdout, "Rank: %d, Block_low: %ld, Block_high: %ld, Block_size: %ld\n",
-        rank, block_low, block_high, block_size); */
+    // Define mpi types - need to be after MPI_Init and args
+    create_mpi_types_for_cms();
+    create_mpi_particle_type();
 
     particle_t *par;
     cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t), 1); // account for adjacent rows
@@ -85,12 +82,12 @@ int main(int argc, char *argv[])
 
     initial_particle_distribution(par, cells);
     for (long long t = 0; t < time_steps; t++) {
-        collisions += simulation_step(par, cells, t);
-        fprintf(stdout, "Rank %d - after step %lld\n", rank, t);
+        collisions += simulation_step(&par, cells, t);
+        //fprintf(stdout, "Rank %d - after step %lld\n", rank, t);
     }
 
-    MPI_Allreduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce(&collisions, &total_collisions, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD); // already inplicit barrier
+    //MPI_Barrier(MPI_COMM_WORLD);
 
     exec_time += omp_get_wtime();
     if(particle_0 != NULL){

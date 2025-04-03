@@ -47,8 +47,8 @@ void async_send_center_of_mass(cell_t *cells, MPI_Request *requests)
  */
 void wait_for_center_of_mass(MPI_Request *requests)//, cell_t *cells)
 {
-    MPI_Status status[4];
-    MPI_Waitall(4, requests, status);
+    //MPI_Status status[4];
+    MPI_Waitall(4, requests, MPI_STATUSES_IGNORE);//status);
 
     // argument "cells" needed for debugging
     // debug_cms(status, cells);
@@ -58,12 +58,6 @@ void async_send_part_in_chunks(particle_t *prev, particle_t *next, long long n_p
 {
     int n_messages_prev = n_prev / CHUNK_SIZE + 1;
     int n_messages_next = n_next / CHUNK_SIZE + 1;
-
-    /* MPI_Barrier(MPI_COMM_WORLD);
-    fprintf(stdout, "Rank %d sending %lld elements rank %d\n", rank, n_prev, prev_rank);
-    MPI_Barrier(MPI_COMM_WORLD);
-    fprintf(stdout, "Rank %d sending %lld elements rank %d\n", rank, n_next, next_rank);
-    MPI_Barrier(MPI_COMM_WORLD); */
 
     // Send particles to previous rank
     for (int i = 0; i < n_messages_prev; i++) {
@@ -83,7 +77,8 @@ void async_recv_part_in_chunks(particle_t *tmp, int rank, int tag, MPI_Request *
     MPI_Irecv(tmp, CHUNK_SIZE, part_type, rank, tag, MPI_COMM_WORLD, request);
 }
 
-int wait_and_get_count(MPI_Request *request) {
+int wait_and_get_count(MPI_Request *request)
+{
     MPI_Status status;
     int count;
 
@@ -91,11 +86,7 @@ int wait_and_get_count(MPI_Request *request) {
 
     MPI_Get_count(&status, part_type, &count);
 
-    /* MPI_Barrier(MPI_COMM_WORLD);
-    fprintf(stdout, "Rank %d received %d elements rank %d (tag %d)\n", rank, count, status.MPI_SOURCE, status.MPI_TAG);
-    MPI_Barrier(MPI_COMM_WORLD); */
-
-    return count;  
+    return count;
 }
 
 void wait_for_send_parts(MPI_Request *requests, int count)
@@ -108,7 +99,7 @@ void convert_to_local_array(particle_t *tmp, int count, particle_t **local_par)
     for (int i = 0; i < count; i++) {
         append_particle_to_array(n_part, &tmp[i], local_par, 12);
         n_part++;
-        if (tmp[i].is_particle_0) fprintf(stdout, "Rank %d - PARTICLE_0 MOVED HELP!!!", rank);
+        if (tmp[i].is_particle_0) fprintf(stdout, "Rank %d - PARTICLE_0 MOVED HELP!!!", rank); // FIXME
     }
     if(particle_0 != NULL && (*local_par)[0].is_particle_0) {
         particle_0 = &(*local_par)[0];

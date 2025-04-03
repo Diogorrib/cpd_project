@@ -56,10 +56,10 @@ void distribute_received_parts(particle_t *par, cell_t *cells, long long n_part_
 
         long long cell_idx = get_local_cell_idx(p);
 
-        if (!cell_in_process_space(cell_idx)) {
+        /* if (!cell_in_process_space(cell_idx)) {
             fprintf(stdout, "Rank %d, Error: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
             exit(EXIT_FAILURE);
-        }
+        } */
 
         append_particle_to_cell(i, cell_idx, par, cells, 11);
     }
@@ -69,11 +69,11 @@ void receive_chuncks_in_loop(particle_t *tmp_prev, particle_t *tmp_next, MPI_Req
 {
     int next_count = 0, prev_count = 0;
     int to_recv_next = 1, to_recv_prev = 1;
-    int count = 0;
+    int count = 1; // message 0 already being received
     particle_t *tmp_prev_old = NULL;
     particle_t *tmp_next_old = NULL;
     while (to_recv_next || to_recv_prev) {
-        
+
         // get count to save received particles and start receiving next chunk async while saving current chunk
         if (to_recv_next) {
             next_count = wait_and_get_count(next_req);
@@ -126,7 +126,7 @@ int exchange_particles(particle_t *prev, particle_t *next, long long n_prev, lon
  * @param par array of local particles (that will be updated with exchanged particles)
  * @param cells array of local cells accounting for 2 adjacents rows (that will be updated according to the new positions)
  */
-void particle_redistribution(particle_t *par, cell_t *cells)
+void particle_redistribution(particle_t **par, cell_t *cells)
 {
     MPI_Request prev_req, next_req;
     MPI_Request *requests;
@@ -145,20 +145,22 @@ void particle_redistribution(particle_t *par, cell_t *cells)
     reset_cell_n_parts(cells);
 
     // distribute per cell the particles that are kept in process space
-    distribute_local_parts_and_save_to_exchange(par, cells, &parts_to_prev, &parts_to_next, &n_parts_to_prev, &n_parts_to_next);
+    distribute_local_parts_and_save_to_exchange(*par, cells, &parts_to_prev, &parts_to_next, &n_parts_to_prev, &n_parts_to_next);
 
     // save current number to distribute received particles
     long long n_part_old = n_part;
 
     // start sending & wait to receive all particles
     n_messages = exchange_particles(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, &requests,
-        tmp_prev, tmp_next, &prev_req, &next_req, &par);
+        tmp_prev, tmp_next, &prev_req, &next_req, par);
 
     // distribute per cell the received particles
-    distribute_received_parts(par, cells, n_part_old);
+    distribute_received_parts(*par, cells, n_part_old);
 
     wait_for_send_parts(requests, n_messages);
     free(requests);
+    free(parts_to_prev);
+    free(parts_to_next);
 }
 
 void initial_particle_distribution(particle_t *par, cell_t *cells)
@@ -193,15 +195,16 @@ void check_outside_space(particle_t *p)
 
 /**
  * @brief  Compute the new velocity and position for each particle,
- * check if new positions are outside the space and update the cells
+ * check if new positions are outside the space and update the cells.
+ * NOTE: Need particle_t** to reallocate the array after receiving new particles
  *
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_new_positions(particle_t *par, cell_t *cells)
+void compute_new_positions(particle_t **par, cell_t *cells)
 {
     for (long long i = 0; i < n_part; i++) {
-        particle_t *p = &par[i];
+        particle_t *p = &(*par)[i];
         if (p->m == 0) continue;
 
         double inv_mass = 1.0 / p->m;
