@@ -10,7 +10,7 @@ long long n_part;
 
 double inv_cell_side;
 long long n_local_cells;
-particle_t *particle_0 = NULL;
+long long particle_0_idx = -1;
 
 int rank, process_count;
 long block_low, block_size;
@@ -41,7 +41,7 @@ long simulation_step(particle_t **par, cell_t *cells, long long time_step)
     //fprintf(stdout, "Rank %d - before collisions %lld\n", rank, time_step);
     return check_collisions(*par, cells);
 }
-void print_result(long long collisions, double exec_time)
+void print_result(particle_t *particle_0, long long collisions, double exec_time)
 {
     fprintf(stdout, "%.3f %.3f\n", particle_0->x, particle_0->y);
     fprintf(stdout, "%lld\n", collisions);
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
     particle_t *par;
     cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t), 1); // account for adjacent rows
-    n_part = init_particles(seed, side, ncside, n_part, &particle_0, &par);
+    n_part = init_particles(seed, side, ncside, n_part, &particle_0_idx, &par);
 
     double exec_time;
     exec_time = -omp_get_wtime();
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
     //MPI_Barrier(MPI_COMM_WORLD);
 
     exec_time += omp_get_wtime();
-    if(particle_0 != NULL){
-        print_result(total_collisions, exec_time);
+    if(particle_0_idx != -1){
+        print_result(&par[particle_0_idx], total_collisions, exec_time);
     }
     cleanup_cells(cells);
     free(cells);

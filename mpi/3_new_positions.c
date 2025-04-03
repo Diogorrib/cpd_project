@@ -36,6 +36,9 @@ void distribute_local_parts_and_save_to_exchange(particle_t *par, cell_t *cells,
         if(cell_in_process_space(cell_idx)) {
             append_particle_to_cell(i, cell_idx, par, cells, 5);
         } else {
+            if (p->is_particle_0) { // particle_0 will be sent to adjacent process
+                particle_0_idx = -1;
+            }
             if (is_prev_process(cell_idx)) {
                 append_particle_to_array(*n_prev, p, prev, 6);
                 (*n_prev)++;

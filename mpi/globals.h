@@ -1,8 +1,6 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include "particle.h"
-
 // size of the side of the squared space of simulation
 extern double side;
 
@@ -18,8 +16,8 @@ extern long long n_part;
 // local number of cells
 extern long long n_local_cells;
 
-// reference to the particle zero
-extern particle_t *particle_0;
+// index of the particle zero
+extern long long particle_0_idx;
 
 extern int rank, process_count;
 extern long block_low, block_size;

@@ -30,7 +30,7 @@ double rnd_normal01()
     return result;
 }
 
-long long init_particles(long userseed, double side, long ncside, long long n_part, particle_t **first, particle_t **par)
+long long init_particles(long userseed, double side, long ncside, long long n_part, long long *part_0_idx, particle_t **par)
 {
     double (*rnd01)() = rnd_uniform01;
     long long i, j = 0;
@@ -60,9 +60,9 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
         }
     }
 
-    // save reference to the first particle
+    // save index of the first particle
     if((*par)[0].is_particle_0) {
-        *first = &(*par)[0];
+        *part_0_idx = 0;
     }
     return j;
 }

@@ -18,6 +18,6 @@ typedef struct {
     double x, y, m;
 } center_of_mass_t;
 
-long long init_particles(long userseed, double side, long ncside, long long n_part, particle_t **first, particle_t **par);
+long long init_particles(long userseed, double side, long ncside, long long n_part, long long *part_0_idx, particle_t **par);
 
 #endif // PARTICLE_H
