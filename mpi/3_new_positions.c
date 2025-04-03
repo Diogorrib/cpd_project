@@ -1,5 +1,4 @@
 #include "simulation.h"
-#include <stdio.h>
 
 void reset_cell_n_parts(cell_t *cells)
 {
@@ -58,12 +57,6 @@ void distribute_received_parts(particle_t *par, cell_t *cells, long long n_part_
         if (p->m == 0) continue;
 
         long long cell_idx = get_local_cell_idx(p);
-
-        /* if (!cell_in_process_space(cell_idx)) {
-            fprintf(stdout, "Rank %d, Error: particle in cell %lld (local=%lld) not in process space; range: %ld - %ld, ncside=%ld\n", rank, get_global_cell_idx(p), cell_idx, block_low*ncside, (block_low+block_size)*ncside-1, ncside);
-            exit(EXIT_FAILURE);
-        } */
-
         append_particle_to_cell(i, cell_idx, par, cells, 11);
     }
 }

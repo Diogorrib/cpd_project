@@ -1,6 +1,5 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <stdio.h>
 #include "utils.h"
 #include "constant.h"
 #include "particle.h"

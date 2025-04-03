@@ -1,5 +1,4 @@
 #include "simulation.h"
-#include <stdio.h>
 
 long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
 {

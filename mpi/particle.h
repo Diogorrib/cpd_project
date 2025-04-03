@@ -3,9 +3,9 @@
 
 typedef struct {
     double x, y, vx, vy, m;
+    char is_particle_0;
     double fx, fy;
     long long cell_idx;
-    char is_particle_0;
 } particle_t;
 
 typedef struct {
