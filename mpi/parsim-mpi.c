@@ -29,13 +29,14 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
     *time_steps = atoll(argv[5]);
 }
 long simulation_step(particle_t **par, cell_t *cells, long long time_step)
-{   
+{
     (void)time_step;
     MPI_Request center_of_mass_requests[4];
     //fprintf(stdout, "Rank %d - before CM %lld\n", rank, time_step);
     compute_center_of_mass(*par, cells, center_of_mass_requests);
     //fprintf(stdout, "Rank %d - before forces %lld\n", rank, time_step);
     compute_forces(*par, cells, center_of_mass_requests);
+    //compute_forces_maximize(*par, cells, center_of_mass_requests);
     //fprintf(stdout, "Rank %d - before new position %lld\n", rank, time_step);
     compute_new_positions(par, cells);
     //fprintf(stdout, "Rank %d - before collisions %lld\n", rank, time_step);
@@ -76,6 +77,8 @@ int main(int argc, char *argv[])
     particle_t *par;
     cell_t *cells = (cell_t *)allocate_memory(ncside*(block_size+2), sizeof(cell_t), 1); // account for adjacent rows
     n_part = init_particles(seed, side, ncside, n_part, &particle_0_idx, &par);
+
+    MPI_Barrier(MPI_COMM_WORLD); // eliminate startup times
 
     double exec_time;
     exec_time = -omp_get_wtime();

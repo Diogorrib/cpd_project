@@ -161,7 +161,7 @@ void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
 // NOT IN USE - may lead to higher memory access cost
 
 
-/* // particles in the same cell
+// particles in the same cell
 void compute_forces_between_parts(cell_t *cell, particle_t *p1, long long j, particle_t *par)
 {
     for (long long i = j + 1; i < cell->n_part; i++) {
@@ -237,4 +237,4 @@ void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
     wait_for_center_of_mass(r);
     loop_per_row(par, cells, n_local_cells - ncside); // last row
     loop_per_row(par, cells, ncside);                 // first row
-} */
+}

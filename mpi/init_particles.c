@@ -61,7 +61,7 @@ long long init_particles(long userseed, double side, long ncside, long long n_pa
     }
 
     // save index of the first particle
-    if((*par)[0].is_particle_0) {
+    if(j > 0 && (*par)[0].is_particle_0) {
         *part_0_idx = 0;
     }
     return j;
