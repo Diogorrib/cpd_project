@@ -68,3 +68,6 @@ build/
 .DS_Store
 Thumbs.db
 \#*#
+
+# hostfile for mpi
+hostfile.txt

@@ -14,6 +14,16 @@ check_executable_exists() {
     fi
 }
 
+mpi_function() {
+    args=$(<"$input_file")
+    actual_output=$(mpirun --oversubscribe --hostfile hostfile.txt $PROJ_DIR/parsim $args 2>/tmp/parsim_stderr)
+}
+
+other_function() {
+    args=$(<"$input_file")
+    actual_output=$(./$PROJ_DIR/parsim $args 2>/tmp/parsim_stderr)
+}
+
 TEST_DIR="samples"
 
 if [ "$#" -ne 2 ]; then
@@ -32,8 +42,11 @@ expected_output_file="$TEST_DIR/${base_name}.out"
 check_file_exists "$input_file"
 check_file_exists "$expected_output_file"
 
-args=$(<"$input_file")
-actual_output=$(./$PROJ_DIR/parsim $args 2>/tmp/parsim_stderr)
+if [[ "$PROJ_DIR" == mpi* ]]; then
+    mpi_function
+else
+    other_function
+fi
 
 # Compare actual output with expected output
 if diff -wB <(echo "$actual_output") "$expected_output_file" >/dev/null; then
