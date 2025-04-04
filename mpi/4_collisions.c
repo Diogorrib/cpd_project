@@ -29,9 +29,12 @@ long check_collisions_for_part(cell_t *cell, long long j, particle_t *par)
  * @param cells array of cells
  * @return long number of collisions
  */
-long check_collisions(particle_t *par, cell_t *cells)
+long check_collisions(particle_t *par, cell_t *cells, particle_t *parts_to_prev, particle_t *parts_to_next,
+    MPI_Request *requests, int n_messages)
 {
     long collisions = 0;
+
+    #pragma omp parallel for schedule(dynamic, 1) reduction(+:collisions)
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cell_t *cell = &cells[cell_idx];
@@ -40,5 +43,12 @@ long check_collisions(particle_t *par, cell_t *cells)
             collisions += check_collisions_for_part(cell, j, par);
         }
     }
+
+    // wait before next iteration
+    wait_for_send_parts(requests, n_messages);
+    free(requests);
+    free(parts_to_prev);
+    free(parts_to_next);
+
     return collisions;
 }

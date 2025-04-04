@@ -2,6 +2,7 @@
 
 void reset_cell_n_parts(cell_t *cells)
 {
+    #pragma omp parallel for
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cells[cell_idx].n_part = 0;
@@ -122,41 +123,31 @@ int exchange_particles(particle_t *prev, particle_t *next, long long n_prev, lon
  * @param par array of local particles (that will be updated with exchanged particles)
  * @param cells array of local cells accounting for 2 adjacents rows (that will be updated according to the new positions)
  */
-void particle_redistribution(particle_t **par, cell_t *cells)
+int particle_redistribution(particle_t **par, cell_t *cells, particle_t *tmp_prev, particle_t *tmp_next,
+    MPI_Request *prev_req, MPI_Request *next_req, particle_t **parts_to_prev, particle_t **parts_to_next,
+    MPI_Request **requests)
 {
-    MPI_Request prev_req, next_req;
-    MPI_Request *requests;
-    particle_t *parts_to_prev = NULL;
-    particle_t *parts_to_next = NULL;
     long long n_parts_to_prev = 0;
     long long n_parts_to_next = 0;
     int n_messages;
-
-    particle_t *tmp_prev = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 3);
-    particle_t *tmp_next = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 4);
-    async_recv_part_in_chunks(tmp_next, next_rank, BASE_TAG_1, &next_req);
-    async_recv_part_in_chunks(tmp_prev, prev_rank, BASE_TAG_2, &prev_req);
 
     // reset cells
     reset_cell_n_parts(cells);
 
     // distribute per cell the particles that are kept in process space
-    distribute_local_parts_and_save_to_exchange(*par, cells, &parts_to_prev, &parts_to_next, &n_parts_to_prev, &n_parts_to_next);
+    distribute_local_parts_and_save_to_exchange(*par, cells, parts_to_prev, parts_to_next, &n_parts_to_prev, &n_parts_to_next);
 
     // save current number to distribute received particles
     long long n_part_old = n_part;
 
     // start sending & wait to receive all particles
-    n_messages = exchange_particles(parts_to_prev, parts_to_next, n_parts_to_prev, n_parts_to_next, &requests,
-        tmp_prev, tmp_next, &prev_req, &next_req, par);
+    n_messages = exchange_particles(*parts_to_prev, *parts_to_next, n_parts_to_prev, n_parts_to_next, requests,
+        tmp_prev, tmp_next, prev_req, next_req, par);
 
     // distribute per cell the received particles
     distribute_received_parts(*par, cells, n_part_old);
 
-    wait_for_send_parts(requests, n_messages);
-    free(requests);
-    free(parts_to_prev);
-    free(parts_to_next);
+    return n_messages;
 }
 
 void initial_particle_distribution(particle_t *par, cell_t *cells)
@@ -197,8 +188,11 @@ void check_outside_space(particle_t *p)
  * @param par array of particles
  * @param cells array of cells
  */
-void compute_new_positions(particle_t **par, cell_t *cells)
+int compute_new_positions(particle_t **par, cell_t *cells, particle_t *tmp_prev, particle_t *tmp_next,
+    MPI_Request *prev_req, MPI_Request *next_req, particle_t **parts_to_prev, particle_t **parts_to_next,
+    MPI_Request **requests)
 {
+    #pragma omp parallel for schedule(guided, 1)
     for (long long i = 0; i < n_part; i++) {
         particle_t *p = &(*par)[i];
         if (p->m == 0) continue;
@@ -218,5 +212,6 @@ void compute_new_positions(particle_t **par, cell_t *cells)
         p->fy = 0;
     }
     cleanup_cells(cells);
-    particle_redistribution(par, cells);
+    return particle_redistribution(par, cells, tmp_prev, tmp_next, prev_req, next_req,
+        parts_to_prev, parts_to_next, requests);
 }

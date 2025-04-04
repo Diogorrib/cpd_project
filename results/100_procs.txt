@@ -1,0 +1,15 @@
+Results for 100 tasks and 3 runs:
+=========================================
+[PASS] 100_assignment_04_1
+[PASS] 100_assignment_04_2
+[PASS] 100_assignment_04_3
+Mean time for assignment_04 over 3 runs: 1.00 seconds
+[PASS] 100_fenix_01_1
+[PASS] 100_fenix_01_2
+[PASS] 100_fenix_01_3
+Mean time for fenix_01 over 3 runs: 0 seconds
+[PASS] 100_fenix_02_1
+[PASS] 100_fenix_02_2
+[PASS] 100_fenix_02_3
+Mean time for fenix_02 over 3 runs: .60 seconds
+=========================================

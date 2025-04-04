@@ -1,0 +1,23 @@
+Results for 32 tasks and 3 runs:
+=========================================
+[PASS] 32_assignment_04_1
+[PASS] 32_assignment_04_2
+[PASS] 32_assignment_04_3
+Mean time for assignment_04 over 3 runs: .20 seconds
+[PASS] 32_fenix_01_1
+[PASS] 32_fenix_01_2
+[PASS] 32_fenix_01_3
+Mean time for fenix_01 over 3 runs: .16 seconds
+[PASS] 32_fenix_02_1
+[PASS] 32_fenix_02_2
+[PASS] 32_fenix_02_3
+Mean time for fenix_02 over 3 runs: 1.70 seconds
+[PASS] 32_fenix_05_1
+[PASS] 32_fenix_05_2
+[PASS] 32_fenix_05_3
+Mean time for fenix_05 over 3 runs: 20.60 seconds
+[PASS] 32_fenix_06_1
+[PASS] 32_fenix_06_2
+[PASS] 32_fenix_06_3
+Mean time for fenix_06 over 3 runs: 28.66 seconds
+=========================================

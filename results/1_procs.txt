@@ -1,0 +1,105 @@
+Results for 1 tasks and 5 runs:
+=========================================
+[PASS] 1_assignment_01_1
+[PASS] 1_assignment_01_2
+[PASS] 1_assignment_01_3
+[PASS] 1_assignment_01_4
+[PASS] 1_assignment_01_5
+Mean time for assignment_01 over 5 runs: 0 seconds
+[PASS] 1_assignment_02_1
+[PASS] 1_assignment_02_2
+[PASS] 1_assignment_02_3
+[PASS] 1_assignment_02_4
+[PASS] 1_assignment_02_5
+Mean time for assignment_02 over 5 runs: 0 seconds
+[PASS] 1_assignment_03_1
+[PASS] 1_assignment_03_2
+[PASS] 1_assignment_03_3
+[PASS] 1_assignment_03_4
+[PASS] 1_assignment_03_5
+Mean time for assignment_03 over 5 runs: 0 seconds
+[PASS] 1_assignment_04_1
+[PASS] 1_assignment_04_2
+[PASS] 1_assignment_04_3
+[PASS] 1_assignment_04_4
+[PASS] 1_assignment_04_5
+Mean time for assignment_04 over 5 runs: 1.44 seconds
+[PASS] 1_debug_info_01_1
+[PASS] 1_debug_info_01_2
+[PASS] 1_debug_info_01_3
+[PASS] 1_debug_info_01_4
+[PASS] 1_debug_info_01_5
+Mean time for debug_info_01 over 5 runs: 0 seconds
+[PASS] 1_fenix_01_1
+[PASS] 1_fenix_01_2
+[PASS] 1_fenix_01_3
+[PASS] 1_fenix_01_4
+[PASS] 1_fenix_01_5
+Mean time for fenix_01 over 5 runs: 1.76 seconds
+[PASS] 1_fenix_02_1
+[PASS] 1_fenix_02_2
+[PASS] 1_fenix_02_3
+[PASS] 1_fenix_02_4
+[PASS] 1_fenix_02_5
+Mean time for fenix_02 over 5 runs: 37.34 seconds
+[PASS] 1_fenix_03_1
+[PASS] 1_fenix_03_2
+[PASS] 1_fenix_03_3
+[PASS] 1_fenix_03_4
+[PASS] 1_fenix_03_5
+Mean time for fenix_03 over 5 runs: 67.80 seconds
+[PASS] 1_fenix_04_1
+[PASS] 1_fenix_04_2
+[PASS] 1_fenix_04_3
+[PASS] 1_fenix_04_4
+[PASS] 1_fenix_04_5
+Mean time for fenix_04 over 5 runs: 396.22 seconds
+[PASS] 1_fenix_05_1
+[PASS] 1_fenix_05_2
+[PASS] 1_fenix_05_3
+[PASS] 1_fenix_05_4
+[PASS] 1_fenix_05_5
+Mean time for fenix_05 over 5 runs: 441.12 seconds
+[PASS] 1_fenix_06_1
+[PASS] 1_fenix_06_2
+[PASS] 1_fenix_06_3
+[PASS] 1_fenix_06_4
+[PASS] 1_fenix_06_5
+Mean time for fenix_06 over 5 runs: 666.12 seconds
+[PASS] 1_fenix_07_1
+[PASS] 1_fenix_07_2
+[PASS] 1_fenix_07_3
+[PASS] 1_fenix_07_4
+[PASS] 1_fenix_07_5
+Mean time for fenix_07 over 5 runs: 81.38 seconds
+[PASS] 1_fenix_3particles_01_1
+[PASS] 1_fenix_3particles_01_2
+[PASS] 1_fenix_3particles_01_3
+[PASS] 1_fenix_3particles_01_4
+[PASS] 1_fenix_3particles_01_5
+Mean time for fenix_3particles_01 over 5 runs: 0 seconds
+[PASS] 1_fenix_3particles_02_1
+[PASS] 1_fenix_3particles_02_2
+[PASS] 1_fenix_3particles_02_3
+[PASS] 1_fenix_3particles_02_4
+[PASS] 1_fenix_3particles_02_5
+Mean time for fenix_3particles_02 over 5 runs: 0 seconds
+[PASS] 1_fenix_3particles_03_1
+[PASS] 1_fenix_3particles_03_2
+[PASS] 1_fenix_3particles_03_3
+[PASS] 1_fenix_3particles_03_4
+[PASS] 1_fenix_3particles_03_5
+Mean time for fenix_3particles_03 over 5 runs: 0 seconds
+[PASS] 1_fenix_3particles_04_1
+[PASS] 1_fenix_3particles_04_2
+[PASS] 1_fenix_3particles_04_3
+[PASS] 1_fenix_3particles_04_4
+[PASS] 1_fenix_3particles_04_5
+Mean time for fenix_3particles_04 over 5 runs: 86.64 seconds
+[PASS] 1_fenix_3particles_05_1
+[PASS] 1_fenix_3particles_05_2
+[PASS] 1_fenix_3particles_05_3
+[PASS] 1_fenix_3particles_05_4
+[PASS] 1_fenix_3particles_05_5
+Mean time for fenix_3particles_05 over 5 runs: 129.80 seconds
+=========================================
