@@ -1,0 +1,7 @@
+Results for 64 tasks, 1 threads & 3 runs:
+=========================================
+[PASS] 64_1_fenix_02_1
+[PASS] 64_1_fenix_02_2
+[PASS] 64_1_fenix_02_3
+Mean time for fenix_02 over 3 runs: 1.80 seconds
+=========================================

@@ -1,0 +1,35 @@
+Results for 3 tasks, 2 threads & 3 runs:
+=========================================
+[PASS] 3_2_fenix_02_1
+[PASS] 3_2_fenix_02_2
+[PASS] 3_2_fenix_02_3
+Mean time for fenix_02 over 3 runs: 12.96 seconds
+[PASS] 3_2_fenix_03_1
+[PASS] 3_2_fenix_03_2
+[PASS] 3_2_fenix_03_3
+Mean time for fenix_03 over 3 runs: 29.16 seconds
+[PASS] 3_2_fenix_04_1
+[PASS] 3_2_fenix_04_2
+[PASS] 3_2_fenix_04_3
+Mean time for fenix_04 over 3 runs: 135.43 seconds
+[PASS] 3_2_fenix_05_1
+[PASS] 3_2_fenix_05_2
+[PASS] 3_2_fenix_05_3
+Mean time for fenix_05 over 3 runs: 119.13 seconds
+[PASS] 3_2_fenix_06_1
+[PASS] 3_2_fenix_06_2
+[PASS] 3_2_fenix_06_3
+Mean time for fenix_06 over 3 runs: 149.56 seconds
+[PASS] 3_2_fenix_07_1
+[PASS] 3_2_fenix_07_2
+[PASS] 3_2_fenix_07_3
+Mean time for fenix_07 over 3 runs: 66.03 seconds
+[PASS] 3_2_fenix_3particles_04_1
+[PASS] 3_2_fenix_3particles_04_2
+[PASS] 3_2_fenix_3particles_04_3
+Mean time for fenix_3particles_04 over 3 runs: 99.53 seconds
+[PASS] 3_2_fenix_3particles_05_1
+[PASS] 3_2_fenix_3particles_05_2
+[PASS] 3_2_fenix_3particles_05_3
+Mean time for fenix_3particles_05 over 3 runs: 43.36 seconds
+=========================================

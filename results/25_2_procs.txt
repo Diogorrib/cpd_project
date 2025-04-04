@@ -1,0 +1,19 @@
+Results for 25 tasks, 2 threads & 3 runs:
+=========================================
+[PASS] 25_2_fenix_02_1
+[PASS] 25_2_fenix_02_2
+[PASS] 25_2_fenix_02_3
+Mean time for fenix_02 over 3 runs: 5.03 seconds
+[PASS] 25_2_fenix_05_1
+[PASS] 25_2_fenix_05_2
+[PASS] 25_2_fenix_05_3
+Mean time for fenix_05 over 3 runs: 25.73 seconds
+[PASS] 25_2_fenix_06_1
+[PASS] 25_2_fenix_06_2
+[PASS] 25_2_fenix_06_3
+Mean time for fenix_06 over 3 runs: 42.60 seconds
+[PASS] 25_2_fenix_07_1
+[PASS] 25_2_fenix_07_2
+[PASS] 25_2_fenix_07_3
+Mean time for fenix_07 over 3 runs: 31.80 seconds
+=========================================

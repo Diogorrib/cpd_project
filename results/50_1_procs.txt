@@ -1,0 +1,15 @@
+Results for 50 tasks, 1 threads & 3 runs:
+=========================================
+[PASS] 50_1_fenix_02_1
+[PASS] 50_1_fenix_02_2
+[PASS] 50_1_fenix_02_3
+Mean time for fenix_02 over 3 runs: 6.23 seconds
+[PASS] 50_1_fenix_05_1
+[PASS] 50_1_fenix_05_2
+[PASS] 50_1_fenix_05_3
+Mean time for fenix_05 over 3 runs: 32.86 seconds
+[PASS] 50_1_fenix_06_1
+[PASS] 50_1_fenix_06_2
+[PASS] 50_1_fenix_06_3
+Mean time for fenix_06 over 3 runs: 49.46 seconds
+=========================================

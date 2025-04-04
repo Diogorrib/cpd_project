@@ -1,0 +1,15 @@
+Results for 32 tasks, 4 threads & 3 runs:
+=========================================
+[PASS] 32_4_fenix_02_1
+[PASS] 32_4_fenix_02_2
+[PASS] 32_4_fenix_02_3
+Mean time for fenix_02 over 3 runs: 3.86 seconds
+[PASS] 32_4_fenix_05_1
+[PASS] 32_4_fenix_05_2
+[PASS] 32_4_fenix_05_3
+Mean time for fenix_05 over 3 runs: 17.96 seconds
+[PASS] 32_4_fenix_06_1
+[PASS] 32_4_fenix_06_2
+[PASS] 32_4_fenix_06_3
+Mean time for fenix_06 over 3 runs: 21.40 seconds
+=========================================
