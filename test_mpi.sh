@@ -1,5 +1,5 @@
 #!/bin/bash
-TEST_DIR="samples/"
+TEST_DIR="samples_reduced/"
 EXEC_DIR="mpi/"
 OUT_DIR="out/"
 SCRIPT_DIR="scripts/"

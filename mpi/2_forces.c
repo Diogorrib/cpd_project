@@ -129,16 +129,11 @@ void compute_acc_for_part(cell_t *cell, particle_t *p1, long long j, particle_t 
     }
 }
 
-/**
- * @brief Compute the forces for each particle
- *
- * @param par array of local particles
- * @param cells array of local cells accounting for 2 adjacents rows
- * @param r array of MPI requests to wait to receive and to send
- */
-void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
+
+// low number of rows per process
+void compute_forces_normal(particle_t *par, cell_t *cells, MPI_Request *r)
 {
-    wait_for_center_of_mass(r); // FIXME - can be improved (only needed for the first and last rows)
+    wait_for_center_of_mass(r);
 
     #pragma omp parallel for schedule(dynamic, 1)
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
@@ -155,5 +150,83 @@ void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
                 compute_acc_for_part(cell, p, j, par, adj_cells);
             }
         }
+    }
+}
+
+// high number of rows per process
+void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
+{
+    long long loop_size = n_local_cells - 4*ncside; // remove 2 first and 2 last rows
+    long long remove_first_row_offset = 3*ncside;
+
+    // loop without critical rows
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (long long i = 0; i < loop_size; i++) {
+        long long cell_idx = i + remove_first_row_offset;
+        cell_t *cell = &cells[cell_idx];
+        if (cell->n_part == 0) continue;
+
+        center_of_mass_t adj_cells[ADJ_CELLS];
+        get_adj_indexes(cell_idx, cells, adj_cells);
+
+        for (long long j = 0; j < cell->n_part; j++) {
+            particle_t *p = &par[cell->part_idx[j]];
+            if (p->m != 0) {
+                compute_acc_for_part(cell, p, j, par, adj_cells);
+            }
+        }
+    }
+
+    // needed for critical rows
+    wait_for_center_of_mass(r);
+
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (long long i = 0; i < 2*ncside; i++) {
+        long long cell_idx = i + ncside; // first rows
+        cell_t *cell = &cells[cell_idx];
+        if (cell->n_part == 0) continue;
+
+        center_of_mass_t adj_cells[ADJ_CELLS];
+        get_adj_indexes(cell_idx, cells, adj_cells);
+
+        for (long long j = 0; j < cell->n_part; j++) {
+            particle_t *p = &par[cell->part_idx[j]];
+            if (p->m != 0) {
+                compute_acc_for_part(cell, p, j, par, adj_cells);
+            }
+        }
+    }
+
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (long long i = 0; i < 2*ncside; i++) {
+        long long cell_idx = i + n_local_cells - ncside; // last rows
+        cell_t *cell = &cells[cell_idx];
+        if (cell->n_part == 0) continue;
+
+        center_of_mass_t adj_cells[ADJ_CELLS];
+        get_adj_indexes(cell_idx, cells, adj_cells);
+
+        for (long long j = 0; j < cell->n_part; j++) {
+            particle_t *p = &par[cell->part_idx[j]];
+            if (p->m != 0) {
+                compute_acc_for_part(cell, p, j, par, adj_cells);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Compute the forces for each particle
+ *
+ * @param par array of local particles
+ * @param cells array of local cells accounting for 2 adjacents rows
+ * @param r array of MPI requests to wait to receive and to send
+ */
+void compute_forces(particle_t *par, cell_t *cells, MPI_Request *r)
+{
+    if (block_size < 5) {
+        compute_forces_normal(par, cells, r);
+    } else {
+        compute_forces_maximize(par, cells, r);
     }
 }
