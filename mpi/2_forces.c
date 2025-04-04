@@ -182,7 +182,7 @@ void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
 
     #pragma omp parallel for schedule(dynamic, 1)
     for (long long i = 0; i < 2*ncside; i++) {
-        long long cell_idx = i + ncside; // first rows
+        long long cell_idx = i + n_local_cells - ncside; // last rows
         cell_t *cell = &cells[cell_idx];
         if (cell->n_part == 0) continue;
 
@@ -199,7 +199,7 @@ void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
 
     #pragma omp parallel for schedule(dynamic, 1)
     for (long long i = 0; i < 2*ncside; i++) {
-        long long cell_idx = i + n_local_cells - ncside; // last rows
+        long long cell_idx = i + ncside; // first rows
         cell_t *cell = &cells[cell_idx];
         if (cell->n_part == 0) continue;
 
@@ -212,7 +212,7 @@ void compute_forces_maximize(particle_t *par, cell_t *cells, MPI_Request *r)
                 compute_acc_for_part(cell, p, j, par, adj_cells);
             }
         }
-    }
+    }    
 }
 
 /**
