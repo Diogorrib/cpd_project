@@ -5,15 +5,16 @@ OUT_DIR="out/"
 SCRIPT_DIR="scripts/"
 RESULTS_DIR="results/"
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <number_of_tasks> <number_of_runs>"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <number_of_tasks> <number_of_threads> <number_of_runs>"
     exit 1
 fi
 
-n_threads=2
 num_processes=$1
-num_runs=$2
-results_file="${RESULTS_DIR}${num_processes}_procs.txt"
+num_threads=$2
+num_runs=$3
+test_id="${num_processes}_${num_threads}"
+results_file="${RESULTS_DIR}${test_id}_procs.txt"
 
 # Track jobs in the cluster
 total_jobs=0
@@ -47,7 +48,7 @@ run_script() {
     local index="$2"
     local args="$3"
 
-    local job_name="${num_processes}_${base_name}_${index}"
+    local job_name="${test_id}_${base_name}_${index}"
     local script_name="${SCRIPT_DIR}${job_name}.sh"
 
     # Create the script for the job
@@ -56,8 +57,9 @@ run_script() {
     echo "#SBATCH --output=${OUT_DIR}${job_name}.out"   >> "$script_name"
     echo "#SBATCH --error=${OUT_DIR}${job_name}.err"    >> "$script_name"
     echo "#SBATCH --ntasks=$num_processes"              >> "$script_name"
-    echo "#SBATCH --cpus-per-task=$n_threads"           >> "$script_name"
-    echo "#SBATCH --export=OMP_NUM_THREADS=$n_threads"  >> "$script_name"
+    echo "#SBATCH --cpus-per-task=$num_threads"         >> "$script_name"
+    echo ""                                             >> "$script_name"
+    echo "export OMP_NUM_THREADS=$num_threads"          >> "$script_name"
     echo ""                                             >> "$script_name"
     echo "srun ${EXEC_DIR}parsim $args"                 >> "$script_name"
 
@@ -71,7 +73,7 @@ check_result_and_get_time() {
     local index="$2"
 
     local expected_output="${TEST_DIR}${base_name}.out"
-    local job_name="${num_processes}_${base_name}_${index}"
+    local job_name="${test_id}_${base_name}_${index}"
     local output_file="${OUT_DIR}${job_name}.out"
     local error_file="${OUT_DIR}${job_name}.err"
 
@@ -97,8 +99,8 @@ check_result_and_get_time() {
 }
 
 # Delete old files
-rm -f "${OUT_DIR}${num_processes}_*.out" "${OUT_DIR}${num_processes}_*.err" "${SCRIPT_DIR}${num_processes}_*.sh"
-rm -f "${RESULTS_DIR}${num_processes}_procs.txt"
+rm -f "${OUT_DIR}${test_id}_*.out" "${OUT_DIR}${test_id}_*.err" "${SCRIPT_DIR}${test_id}_*.sh"
+rm -f "${RESULTS_DIR}${test_id}_procs.txt"
 
 compile_mpi
 
@@ -145,6 +147,6 @@ done
 
 echo "All jobs finished. Collecting results and execution times..."
 
-bash collect_results_and_time.sh "$num_processes" "$num_runs"
+bash collect_results_and_time.sh "$num_processes" "$num_threads" "$num_runs"
 
 echo "Done!"

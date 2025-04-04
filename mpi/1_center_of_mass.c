@@ -10,8 +10,7 @@
  */
 void compute_center_of_mass(particle_t *par, cell_t *cells, MPI_Request *r)
 {
-    async_recv_center_of_mass(cells, r);
-
+    #pragma omp parallel for schedule(dynamic, 1)
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cell_t *cell = &cells[cell_idx];
@@ -34,4 +33,15 @@ void compute_center_of_mass(particle_t *par, cell_t *cells, MPI_Request *r)
     }
 
     async_send_center_of_mass(cells, r);
+}
+
+void async_start_recv_all(cell_t *cells, MPI_Request *requests_cm, particle_t **tmp_prev, particle_t **tmp_next,
+    MPI_Request *prev_req, MPI_Request *next_req)
+{
+    async_recv_center_of_mass(cells, requests_cm);
+
+    *tmp_prev = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 3);
+    *tmp_next = (particle_t *)allocate_memory(CHUNK_SIZE, sizeof(particle_t), 4);
+    async_recv_part_in_chunks(*tmp_next, next_rank, BASE_TAG_1, next_req);
+    async_recv_part_in_chunks(*tmp_prev, prev_rank, BASE_TAG_2, prev_req);
 }

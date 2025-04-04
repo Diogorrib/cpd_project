@@ -31,10 +31,19 @@ void parse_args(int argc, char *argv[], long *seed, double *side, long *ncside, 
 long simulation_step(particle_t **par, cell_t *cells)
 {
     MPI_Request center_of_mass_requests[4];
+    MPI_Request prev_req, next_req;
+    particle_t *tmp_prev = NULL;
+    particle_t *tmp_next = NULL;
+    particle_t *parts_to_prev = NULL;
+    particle_t *parts_to_next = NULL;
+    MPI_Request *requests = NULL;
+    int n_msg;
+
+    async_start_recv_all(cells, center_of_mass_requests, &tmp_prev, &tmp_next, &prev_req, &next_req);
     compute_center_of_mass(*par, cells, center_of_mass_requests);
     compute_forces(*par, cells, center_of_mass_requests);
-    compute_new_positions(par, cells);
-    return check_collisions(*par, cells);
+    n_msg = compute_new_positions(par, cells, tmp_prev, tmp_next, &prev_req, &next_req, &parts_to_prev, &parts_to_next, &requests);
+    return check_collisions(*par, cells, parts_to_prev, parts_to_next, requests, n_msg);
 }
 void print_result(particle_t *particle_0, long long collisions, double exec_time)
 {

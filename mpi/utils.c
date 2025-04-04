@@ -107,6 +107,7 @@ long long get_local_cell_idx(particle_t *p)
 
 void cleanup_cells(cell_t *cells)
 {
+    #pragma omp parallel for
     for (long long i = 0; i < n_local_cells; i++) { // Last row is ignored by n_local_cells
         long long cell_idx = i + ncside; // Skip the first row as it is computed by another process
         cell_t *cell = &cells[cell_idx];

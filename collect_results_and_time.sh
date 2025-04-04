@@ -5,14 +5,16 @@ OUT_DIR="out/"
 SCRIPT_DIR="scripts/"
 RESULTS_DIR="results/"
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <number_of_tasks> <number_of_runs>"
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <number_of_tasks> <number_of_threads> <number_of_runs>"
     exit 1
 fi
 
 num_processes=$1
-num_runs=$2
-results_file="${RESULTS_DIR}${num_processes}_procs.txt"
+num_threads=$2
+num_runs=$3
+test_id="${num_processes}_${num_threads}"
+results_file="${RESULTS_DIR}${test_id}_procs.txt"
 
 # Track tests to get mean and results
 base_names=()
@@ -22,7 +24,7 @@ check_result_and_get_time() {
     local index="$2"
 
     local expected_output="${TEST_DIR}${base_name}.out"
-    local job_name="${num_processes}_${base_name}_${index}"
+    local job_name="${test_id}_${base_name}_${index}"
     local output_file="${OUT_DIR}${job_name}.out"
     local error_file="${OUT_DIR}${job_name}.err"
 
@@ -46,9 +48,9 @@ check_result_and_get_time() {
     echo "$elapsed_time"
 }
 
-for output_file in ${OUT_DIR}${num_processes}_*.out; do
+for output_file in ${OUT_DIR}${test_id}_*.out; do
     # Get the base name of the output file
-    base_name=$(echo $(basename "$output_file" .out) | sed 's/^[0-9]*_//; s/_[0-9]*$//')
+    base_name=$(basename "$output_file" .out | sed 's/^[0-9]*_[0-9]*_//; s/_*[0-9]*$//')
 
     # Add the base name to the array if it's not already there
     if [[ ! " ${base_names[@]} " =~ " ${base_name} " ]]; then
@@ -59,8 +61,8 @@ done
 # Make sure the needed directories exist
 mkdir -p "$RESULTS_DIR"
 
-echo "Results for $num_processes tasks and $num_runs runs:" > "$results_file"
-echo "========================================="            >> "$results_file"
+echo "Results for $num_processes tasks, $num_threads threads & $num_runs runs:" > "$results_file"
+echo "========================================="                                >> "$results_file"
 
 for base_name in "${base_names[@]}"; do
     acc_time=0
